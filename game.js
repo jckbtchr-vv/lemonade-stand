@@ -12,6 +12,11 @@ let gameState = {
     cupsPerSecond: 0,
     autoSellRate: 0,
     
+    // Supply inventory
+    water: 10,
+    sugar: 5,
+    ice: 8,
+    
     upgrades: {
         betterRecipe: { owned: false, cost: 25.00 },
         autoSqueezer: { owned: false, cost: 100.00, rate: 1 },
@@ -70,6 +75,15 @@ function buyBulkLemons() {
     }
 }
 
+function buySupply(supplyType, cost, quantity = 1) {
+    if (gameState.money >= cost) {
+        gameState.money -= cost;
+        gameState[supplyType] += quantity;
+        updateDisplay();
+        updateSupplyButtons();
+    }
+}
+
 function buyUpgrade(upgradeId) {
     const upgrade = gameState.upgrades[upgradeId];
     if (!upgrade.owned && gameState.money >= upgrade.cost) {
@@ -106,6 +120,12 @@ function updateDisplay() {
     document.getElementById('totalRevenue').textContent = `$${gameState.totalRevenue.toFixed(2)}`;
     document.getElementById('cupsPerSecond').textContent = gameState.cupsPerSecond.toFixed(1);
     document.getElementById('rate').textContent = gameState.cupsPerSecond.toFixed(1);
+    
+    // Update supply counts
+    document.getElementById('lemonCount').textContent = gameState.lemons;
+    document.getElementById('waterCount').textContent = gameState.water;
+    document.getElementById('sugarCount').textContent = gameState.sugar;
+    document.getElementById('iceCount').textContent = gameState.ice;
     
     // Update button states
     document.getElementById('makeLemonade').disabled = gameState.lemons < 1;
@@ -234,6 +254,7 @@ function updateLemonCostsFromTokenPrice(tokenPrice) {
         updateDisplay();
         // Ensure market buttons are updated after display to prevent override
         updateMarketButtons();
+        updateSupplyButtons();
         
         // Update the dynamic cost display
         const dynamicCostElement = document.getElementById('dynamicLemonCost');
@@ -1021,6 +1042,8 @@ function switchMarketTab(tabName) {
 // Market Items Storage
 let purchasedMarketItems = {
     sugar: false,
+    premiumIngredients: false,
+    basicMarketing: false,
     premiumCups: false,
     iceMachine: false,
     marketingSigns: false,
@@ -1064,6 +1087,16 @@ function applyMarketItemEffects(itemName) {
         case 'sugar':
             // Increase base price by 10%
             gameState.sellPrice = Math.round((gameState.sellPrice * 1.1) * 100) / 100;
+            break;
+            
+        case 'premiumIngredients':
+            // Increase price by 15%
+            gameState.sellPrice = Math.round((gameState.sellPrice * 1.15) * 100) / 100;
+            break;
+            
+        case 'basicMarketing':
+            // Increase sales rate by 20%
+            gameState.autoSellRate *= 1.2;
             break;
             
         case 'premiumCups':
@@ -1132,14 +1165,42 @@ function updateSellButton() {
 function updateMarketButtons() {
     const buyLemonsButton = document.getElementById('buyLemons');
     if (buyLemonsButton) {
-        buyLemonsButton.textContent = `$${gameState.lemonCost.toFixed(2)}`;
+        const newPrice = `$${gameState.lemonCost.toFixed(2)}`;
+        buyLemonsButton.textContent = `+1 ${newPrice}`;
+        buyLemonsButton.disabled = gameState.money < gameState.lemonCost;
     }
     
     const buyBulkButton = document.getElementById('buyBulkLemons');
     if (buyBulkButton) {
         const bulkPrice = gameState.lemonCost * 9;
-        buyBulkButton.textContent = `$${bulkPrice.toFixed(2)}`;
+        const newPrice = `$${bulkPrice.toFixed(2)}`;
+        buyBulkButton.textContent = `+10 ${newPrice}`;
+        buyBulkButton.disabled = gameState.money < bulkPrice;
     }
+}
+
+// Update supply button states
+function updateSupplyButtons() {
+    // Water buttons
+    const waterButtons = document.querySelectorAll('[onclick*="buySupply(\'water\'"]');
+    waterButtons.forEach(button => {
+        const cost = button.onclick.toString().includes('0.45') ? 0.45 : 0.05;
+        button.disabled = gameState.money < cost;
+    });
+    
+    // Sugar buttons
+    const sugarButtons = document.querySelectorAll('[onclick*="buySupply(\'sugar\'"]');
+    sugarButtons.forEach(button => {
+        const cost = button.onclick.toString().includes('0.72') ? 0.72 : 0.08;
+        button.disabled = gameState.money < cost;
+    });
+    
+    // Ice buttons
+    const iceButtons = document.querySelectorAll('[onclick*="buySupply(\'ice\'"]');
+    iceButtons.forEach(button => {
+        const cost = button.onclick.toString().includes('0.27') ? 0.27 : 0.03;
+        button.disabled = gameState.money < cost;
+    });
 }
 
 // Initialize Game
@@ -1150,6 +1211,7 @@ function initGame() {
     
     // Update market buttons after display to ensure correct prices
     updateMarketButtons();
+    updateSupplyButtons();
     
     // Initialize the dynamic cost display
     const dynamicCostElement = document.getElementById('dynamicLemonCost');
