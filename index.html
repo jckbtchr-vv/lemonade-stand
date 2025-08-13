@@ -273,11 +273,42 @@
 <body>
     <div class="game-container">
         <div class="header">
-            <h1 class="title">LEMONADE TERMINAL</h1>
-            <p class="subtitle">FINANCIAL SIMULATION SYSTEM</p>
+            <h1 class="title">Lemonade Stand</h1>
+            <p class="subtitle">A Visualize Value Market Simulator</p>
         </div>
 
         <div class="game-grid">
+            <!-- Production Panel -->
+            <div class="panel">
+                <h2>OPERATIONS</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-value" id="money">$0.00</span>
+                        <span class="stat-label">CASH</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="lemons">0</span>
+                        <span class="stat-label">INVENTORY</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="cups">0</span>
+                        <span class="stat-label">UNITS READY</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="rate">0</span>
+                        <span class="stat-label">RATE/SEC</span>
+                    </div>
+                </div>
+
+                <button class="action-button primary-button" id="makeLemonade" onclick="makeLemonade()">
+                    PRODUCE UNIT (1 LEMON)
+                </button>
+                
+                <button class="action-button secondary-button" id="sellCup" onclick="sellCup()">
+                    EXECUTE SALE ($0.50)
+                </button>
+            </div>
+
             <!-- Token Valuation Panel -->
             <div class="panel">
                 <h2>TOKEN VALUATION</h2>
@@ -327,37 +358,6 @@
                         <div style="color: #888; font-size: 0.8em; text-align: center;">LOADING TRADES...</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Production Panel -->
-            <div class="panel">
-                <h2>OPERATIONS</h2>
-                <div class="stats">
-                    <div class="stat">
-                        <span class="stat-value" id="money">$0.00</span>
-                        <span class="stat-label">CASH</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-value" id="lemons">0</span>
-                        <span class="stat-label">INVENTORY</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-value" id="cups">0</span>
-                        <span class="stat-label">UNITS READY</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-value" id="rate">0</span>
-                        <span class="stat-label">RATE/SEC</span>
-                    </div>
-                </div>
-
-                <button class="action-button primary-button" id="makeLemonade" onclick="makeLemonade()">
-                    PRODUCE UNIT (1 LEMON)
-                </button>
-                
-                <button class="action-button secondary-button" id="sellCup" onclick="sellCup()">
-                    EXECUTE SALE ($0.50)
-                </button>
             </div>
 
             <!-- Market Panel -->
