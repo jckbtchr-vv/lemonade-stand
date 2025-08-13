@@ -268,6 +268,71 @@
                 padding: 15px;
             }
         }
+
+        /* Market Tabs Styling */
+        .market-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+
+        .market-tab {
+            background: #1a1a1a;
+            color: #888;
+            border: none;
+            padding: 8px 12px;
+            font-family: 'Space Mono', 'Courier New', monospace;
+            font-size: 0.7em;
+            font-weight: bold;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            flex: 1;
+            text-transform: uppercase;
+        }
+
+        .market-tab:hover {
+            color: #fff;
+            background: #2a2a2a;
+        }
+
+        .market-tab.active {
+            color: #ffff00;
+            border-bottom-color: #ffff00;
+            background: #2a2a2a;
+        }
+
+        .market-content {
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .market-content.active {
+            display: block;
+        }
+
+        .market-content .upgrade-item {
+            margin-bottom: 10px;
+        }
+
+        /* Scrollbar styling for market content */
+        .market-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .market-content::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .market-content::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        .market-content::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body>
@@ -320,6 +385,10 @@
                     DATA SOURCE: LOADING...
                 </div>
                 
+                <div id="tokenImpact" style="margin-bottom: 10px; padding: 4px 8px; border: 1px solid #333; font-size: 0.6em; color: #ffff00; text-align: center; background: #1a1a1a;">
+                    LEMON COST: $<span id="dynamicLemonCost">0.10</span> (TOKEN LINKED)
+                </div>
+                
                 <button class="action-button secondary-button" onclick="manualRefresh()" style="margin-bottom: 10px; font-size: 0.8em;">
                     REFRESH DATA
                 </button>
@@ -347,6 +416,28 @@
                         </div>
                     </div>
                     
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-value" id="tokenHolders">LOADING...</span>
+                            <span class="stat-label">HOLDERS</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="tokenDirection">LOADING...</span>
+                            <span class="stat-label">24H TREND</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-value" id="tokenLiquidity">LOADING...</span>
+                            <span class="stat-label">LIQUIDITY</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="tokenFdv">LOADING...</span>
+                            <span class="stat-label">FDV</span>
+                        </div>
+                    </div>
+                    
                     <div id="priceChart" style="height: 140px; background: #111; border: 1px solid #333; margin: 10px 0; position: relative; overflow: hidden;">
                         <canvas id="chartCanvas" width="100%" height="140" style="display: block;"></canvas>
                         <div id="chartLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #888; font-size: 0.8em;">
@@ -357,30 +448,163 @@
                     <div id="recentTrades" style="max-height: 100px; overflow-y: auto; border: 1px solid #333; padding: 5px;">
                         <div style="color: #888; font-size: 0.8em; text-align: center;">LOADING TRADES...</div>
                     </div>
+                    
+                    <!-- Business Metrics Display -->
+                    <div id="businessMetrics" style="margin-top: 10px; padding: 8px; border: 1px solid #333; background: #111; display: none;">
+                        <div style="font-size: 0.7em; color: #00ffff; margin-bottom: 5px; text-align: center;">BUSINESS PERFORMANCE METRICS</div>
+                        <div style="font-size: 0.6em; color: #888;">
+                            <div>EFFICIENCY: <span id="efficiencyMetric">1.00x</span></div>
+                            <div>REVENUE: $<span id="revenueMetric">0.00</span></div>
+                            <div>SCALE: <span id="scaleMetric">0.0x</span></div>
+                            <div>PREMIUM: <span id="premiumMetric">1.00x</span></div>
+                            <div>MARKET: <span id="marketMetric">0</span> units</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Market Panel -->
             <div class="panel">
                 <h2>MARKET</h2>
-                <div class="upgrade-item">
-                    <div class="upgrade-info">
-                        <div class="upgrade-name">ACQUIRE INVENTORY</div>
-                        <div class="upgrade-description">Single unit purchase - immediate delivery</div>
-                    </div>
-                    <button class="upgrade-cost" id="buyLemons" onclick="buyLemons()">
-                        $0.10
-                    </button>
+                
+                <!-- Market Tabs -->
+                <div class="market-tabs">
+                    <button class="market-tab active" onclick="switchMarketTab('basic')">BASIC</button>
+                    <button class="market-tab" onclick="switchMarketTab('advanced')">ADVANCED</button>
+                    <button class="market-tab" onclick="switchMarketTab('premium')">PREMIUM</button>
+                    <button class="market-tab" onclick="switchMarketTab('enterprise')">ENTERPRISE</button>
                 </div>
-
-                <div class="upgrade-item">
-                    <div class="upgrade-info">
-                        <div class="upgrade-name">BULK ORDER (10X)</div>
-                        <div class="upgrade-description">Volume discount - 10% savings on bulk purchase</div>
+                
+                <!-- Basic Market Items -->
+                <div id="basic-market" class="market-content active">
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">ACQUIRE INVENTORY</div>
+                            <div class="upgrade-description">Single unit purchase - price linked to token market</div>
+                        </div>
+                        <button class="upgrade-cost" id="buyLemons" onclick="buyLemons()">
+                            LOADING...
+                        </button>
                     </div>
-                    <button class="upgrade-cost" id="buyBulkLemons" onclick="buyBulkLemons()">
-                        $0.90
-                    </button>
+
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">BULK ORDER (10X)</div>
+                            <div class="upgrade-description">Volume discount - pricing follows token volatility</div>
+                        </div>
+                        <button class="upgrade-cost" id="buyBulkLemons" onclick="buyBulkLemons()">
+                            LOADING...
+                        </button>
+                    </div>
+                    
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">SUGAR SUPPLY</div>
+                            <div class="upgrade-description">Essential sweetener - improves taste profile</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('sugar', 2.50)">
+                            $2.50
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Advanced Market Items -->
+                <div id="advanced-market" class="market-content">
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">PREMIUM CUPS</div>
+                            <div class="upgrade-description">Branded containers - increase perceived value</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('premiumCups', 15.00)">
+                            $15.00
+                        </button>
+                    </div>
+                    
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">ICE MACHINE</div>
+                            <div class="upgrade-description">Cold beverages - seasonal demand multiplier</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('iceMachine', 45.00)">
+                            $45.00
+                        </button>
+                    </div>
+                    
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">MARKETING SIGNS</div>
+                            <div class="upgrade-description">Attract customers - increase sales velocity</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('marketingSigns', 25.00)">
+                            $25.00
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Premium Market Items -->
+                <div id="premium-market" class="market-content">
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">ORGANIC CERTIFICATION</div>
+                            <div class="upgrade-description">Premium positioning - 50% price increase</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('organicCert', 150.00)">
+                            $150.00
+                        </button>
+                    </div>
+                    
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">MOBILE CART</div>
+                            <div class="upgrade-description">Expand territory - access new markets</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('mobileCart', 300.00)">
+                            $300.00
+                        </button>
+                    </div>
+                    
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">FLAVOR VARIETY</div>
+                            <div class="upgrade-description">Multiple SKUs - capture diverse preferences</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('flavorVariety', 200.00)">
+                            $200.00
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Enterprise Market Items -->
+                <div id="enterprise-market" class="market-content">
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">FRANCHISE RIGHTS</div>
+                            <div class="upgrade-description">Scale operations - exponential growth model</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('franchise', 1000.00)">
+                            $1,000.00
+                        </button>
+                    </div>
+                    
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">SUPPLY CHAIN AI</div>
+                            <div class="upgrade-description">Predictive analytics - optimize inventory</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('supplyChainAI', 2500.00)">
+                            $2,500.00
+                        </button>
+                    </div>
+                    
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">IPO PREPARATION</div>
+                            <div class="upgrade-description">Public offering - unlock institutional capital</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('ipo', 10000.00)">
+                            $10,000.00
+                        </button>
+                    </div>
                 </div>
             </div>
 
