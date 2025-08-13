@@ -25,7 +25,7 @@
         }
 
         .game-container {
-            max-width: 1200px;
+            max-width: 1800px;
             margin: 0 auto;
             background: #000000;
             border: 1px solid #333333;
@@ -59,17 +59,20 @@
 
         .game-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
             margin-bottom: 20px;
+            align-items: start;
         }
 
         .panel {
             background: #000000;
             border: 1px solid #333333;
             border-radius: 0;
-            padding: 15px;
+            padding: 20px;
             box-shadow: none;
+            height: fit-content;
+            align-self: start;
         }
 
         .panel h2 {
@@ -100,173 +103,135 @@
         }
 
         .stat-value {
-            font-size: 1.2em;
-            font-weight: normal;
-            color: #ffff00;
             display: block;
-            font-family: 'Space Mono', 'Courier New', Monaco, 'Lucida Console', monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 2px;
         }
 
         .stat-label {
+            font-size: 0.7em;
             color: #888888;
-            font-size: 0.8em;
-            margin-top: 2px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
 
-        .action-button {
-            width: 100%;
-            padding: 8px 12px;
-            font-size: 0.9em;
+        .action-button, .upgrade-cost, .secondary-button, .primary-button {
+            background: #1a1a1a;
+            color: #ffffff;
             border: 1px solid #333333;
-            border-radius: 0;
+            padding: 10px 15px;
+            font-family: 'Space Mono', 'Courier New', monospace;
+            font-size: 0.9em;
             cursor: pointer;
             transition: all 0.2s ease;
-            margin-bottom: 8px;
-            font-weight: normal;
-            font-family: 'Space Mono', 'Courier New', Monaco, 'Lucida Console', monospace;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .action-button:hover, .upgrade-cost:hover {
+            background: #2a2a2a;
+            border-color: #ffff00;
+        }
+
+        .action-button:disabled, .upgrade-cost:disabled {
+            background: #0a0a0a;
+            color: #666666;
+            cursor: not-allowed;
+            border-color: #222222;
         }
 
         .primary-button {
-            background: #000000;
-            color: #ffffff;
+            background: #1a1a1a;
+            border-color: #ffff00;
         }
 
-        .primary-button:hover:not(:disabled) {
-            background: #ffff00;
-            color: #000000;
+        .primary-button:hover {
+            background: #2a2a2a;
             border-color: #ffff00;
         }
 
         .secondary-button {
-            background: #000000;
-            color: #888888;
+            background: #1a1a1a;
+            border-color: #666666;
         }
 
-        .secondary-button:hover:not(:disabled) {
-            background: #333333;
-            color: #ffffff;
-            border-color: #555555;
-        }
-
-        .action-button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            color: #444444;
-            border-color: #222222;
+        .secondary-button:hover {
+            background: #2a2a2a;
+            border-color: #ffff00;
         }
 
         .upgrade-item {
-            background: #000000;
-            padding: 10px;
-            border: 1px solid #333333;
-            border-radius: 0;
-            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: none;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #333333;
+            background: #0a0a0a;
         }
 
         .upgrade-info {
             flex: 1;
+            margin-right: 10px;
         }
 
         .upgrade-name {
-            font-weight: normal;
+            font-weight: bold;
             color: #ffffff;
             margin-bottom: 3px;
             font-size: 0.9em;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .upgrade-description {
-            font-size: 0.8em;
+            font-size: 0.7em;
             color: #888888;
             line-height: 1.3;
         }
 
         .upgrade-cost {
-            background: #000000;
-            color: #ffff00;
-            padding: 6px 12px;
-            border: 1px solid #333333;
-            border-radius: 0;
-            font-weight: normal;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: 'Space Mono', 'Courier New', Monaco, 'Lucida Console', monospace;
+            min-width: 80px;
+            padding: 8px 12px;
             font-size: 0.8em;
         }
 
-        .upgrade-cost:hover:not(:disabled) {
-            background: #ffff00;
-            color: #000000;
-            border-color: #ffff00;
-        }
-
-        .upgrade-cost:disabled {
-            background: #000000;
-            color: #444444;
-            border-color: #222222;
-            cursor: not-allowed;
-        }
-
-        .progress-section {
-            grid-column: 1 / -1;
-        }
-
         .progress-bar {
-            background: #222222;
+            width: 100%;
+            height: 20px;
+            background: #1a1a1a;
             border: 1px solid #333333;
-            border-radius: 0;
-            height: 15px;
-            margin: 8px 0;
+            margin-bottom: 10px;
+            position: relative;
             overflow: hidden;
         }
 
         .progress-fill {
-            background: #ffff00;
             height: 100%;
+            background: #ffff00;
             transition: width 0.3s ease;
-            border-radius: 0;
         }
 
         .achievement {
-            background: #000000;
-            border: 1px solid #ffff00;
-            border-radius: 0;
+            background: #1a1a1a;
+            border: 1px solid #333333;
             padding: 8px;
-            margin: 5px 0;
+            margin-bottom: 8px;
+            border-left: 3px solid #ffff00;
+        }
+
+        .achievement-name {
+            font-weight: bold;
             color: #ffff00;
+            margin-bottom: 3px;
             font-size: 0.9em;
         }
 
-        @media (max-width: 768px) {
-            .game-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .title {
-                font-size: 1.4em;
-            }
-            
-            body {
-                padding: 10px;
-                font-size: 13px;
-            }
-            
-            .game-container {
-                padding: 15px;
-            }
+        .achievement-description {
+            font-size: 0.7em;
+            color: #888888;
         }
 
         /* Market Tabs Styling */
@@ -304,7 +269,7 @@
 
         .market-content {
             display: none;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }
 
@@ -333,6 +298,192 @@
         .market-content::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+
+        /* Compact Panel Styling */
+        .compact-panel {
+            padding: 20px !important;
+        }
+
+        .compact-panel h2 {
+            display: none; /* Remove header to save space */
+        }
+
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .action-row .action-button {
+            flex: 1;
+            font-size: 0.8em;
+            padding: 8px 12px;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .quick-button {
+            flex: 1;
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 6px 8px;
+            font-family: 'Space Mono', 'Courier New', monospace;
+            font-size: 0.7em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        .quick-button:hover {
+            background: #3a3a3a;
+            border-color: #ffff00;
+        }
+
+        .quick-button:disabled {
+            background: #1a1a1a;
+            color: #666;
+            cursor: not-allowed;
+            border-color: #333;
+        }
+
+        /* Supply & Stock Module Styling */
+        .supply-status {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #333;
+            background: #111;
+        }
+
+        .supply-level {
+            text-align: center;
+            flex: 1;
+        }
+
+        .supply-count {
+            display: block;
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #ffff00;
+            margin-bottom: 2px;
+        }
+
+        .supply-type {
+            font-size: 0.6em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .supply-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .supply-item {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid #333;
+            background: #0a0a0a;
+        }
+
+        .supply-info {
+            flex: 1;
+        }
+
+        .supply-name {
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 4px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        .supply-description {
+            font-size: 0.7em;
+            color: #888;
+            line-height: 1.3;
+            margin-bottom: 8px;
+        }
+
+        .supply-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .supply-button {
+            flex: 1;
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 6px 8px;
+            font-family: 'Space Mono', 'Courier New', monospace;
+            font-size: 0.7em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        .supply-button:hover {
+            background: #3a3a3a;
+            border-color: #ffff00;
+        }
+
+        .supply-button:disabled {
+            background: #1a1a1a;
+            color: #666;
+            cursor: not-allowed;
+            border-color: #333;
+        }
+
+        .supply-button.bulk {
+            background: #1a3a1a;
+            border-color: #4a4a4a;
+        }
+
+        .supply-button.bulk:hover {
+            background: #2a4a2a;
+            border-color: #ffff00;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .game-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .supply-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .supply-item {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+            
+            .supply-actions {
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -343,9 +494,8 @@
         </div>
 
         <div class="game-grid">
-            <!-- Production Panel -->
-            <div class="panel">
-                <h2>OPERATIONS</h2>
+            <!-- Operations Panel -->
+            <div class="panel compact-panel">
                 <div class="stats">
                     <div class="stat">
                         <span class="stat-value" id="money">$0.00</span>
@@ -365,13 +515,119 @@
                     </div>
                 </div>
 
-                <button class="action-button primary-button" id="makeLemonade" onclick="makeLemonade()">
-                    PRODUCE UNIT (1 LEMON)
-                </button>
+                <div class="action-row">
+                    <button class="action-button primary-button" id="makeLemonade" onclick="makeLemonade()">
+                        PRODUCE UNIT
+                    </button>
+                    <button class="action-button secondary-button" id="sellCup" onclick="sellCup()">
+                        EXECUTE SALE
+                    </button>
+                </div>
+            </div>
+
+            <!-- Supply & Stock Module -->
+            <div class="panel">
+                <h2>SUPPLY & STOCK</h2>
                 
-                <button class="action-button secondary-button" id="sellCup" onclick="sellCup()">
-                    EXECUTE SALE ($0.50)
-                </button>
+                <!-- Current Supply Levels -->
+                <div class="supply-status">
+                    <div class="supply-level">
+                        <span class="supply-count" id="lemonCount">0</span>
+                        <span class="supply-type">LEMONS</span>
+                    </div>
+                    <div class="supply-level">
+                        <span class="supply-count" id="waterCount">10</span>
+                        <span class="supply-type">WATER</span>
+                    </div>
+                    <div class="supply-level">
+                        <span class="supply-count" id="sugarCount">5</span>
+                        <span class="supply-type">SUGAR</span>
+                    </div>
+                    <div class="supply-level">
+                        <span class="supply-count" id="iceCount">8</span>
+                        <span class="supply-type">ICE</span>
+                    </div>
+                </div>
+                
+                <div class="supply-grid">
+                    <div class="supply-item">
+                        <div class="supply-info">
+                            <div class="supply-name">LEMONS</div>
+                            <div class="supply-description">Core ingredient - price linked to token</div>
+                        </div>
+                        <div class="supply-actions">
+                            <button class="supply-button" id="buyLemons" onclick="buyLemons()">
+                                +1 LOADING...
+                            </button>
+                            <button class="supply-button bulk" id="buyBulkLemons" onclick="buyBulkLemons()">
+                                +10 LOADING...
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="supply-item">
+                        <div class="supply-info">
+                            <div class="supply-name">WATER</div>
+                            <div class="supply-description">Essential base - consistent pricing</div>
+                        </div>
+                        <div class="supply-actions">
+                            <button class="supply-button" onclick="buySupply('water', 0.05)">
+                                +1 $0.05
+                            </button>
+                            <button class="supply-button bulk" onclick="buySupply('water', 0.45, 10)">
+                                +10 $0.45
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="supply-item">
+                        <div class="supply-info">
+                            <div class="supply-name">SUGAR</div>
+                            <div class="supply-description">Sweetener - enhances product value</div>
+                        </div>
+                        <div class="supply-actions">
+                            <button class="supply-button" onclick="buySupply('sugar', 0.08)">
+                                +1 $0.08
+                            </button>
+                            <button class="supply-button bulk" onclick="buySupply('sugar', 0.72, 10)">
+                                +10 $0.72
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="supply-item">
+                        <div class="supply-info">
+                            <div class="supply-name">ICE</div>
+                            <div class="supply-description">Temperature control - seasonal demand</div>
+                        </div>
+                        <div class="supply-actions">
+                            <button class="supply-button" onclick="buySupply('ice', 0.03)">
+                                +1 $0.03
+                            </button>
+                            <button class="supply-button bulk" onclick="buySupply('ice', 0.27, 10)">
+                                +10 $0.27
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Panel -->
+            <div class="panel progress-section">
+                <h2>ANALYTICS</h2>
+                <div>
+                    <strong>TOTAL UNITS SOLD: </strong><span id="totalCupsSold">0</span>
+                </div>
+                <div>
+                    <strong>TOTAL REVENUE: </strong><span id="totalRevenue">$0.00</span>
+                </div>
+                <div>
+                    <strong>CURRENT THROUGHPUT: </strong><span id="cupsPerSecond">0</span>
+                </div>
+                
+                <div id="achievements">
+                    <!-- Achievements will be added here dynamically -->
+                </div>
             </div>
 
             <!-- Token Valuation Panel -->
@@ -479,31 +735,31 @@
                 <div id="basic-market" class="market-content active">
                     <div class="upgrade-item">
                         <div class="upgrade-info">
-                            <div class="upgrade-name">ACQUIRE INVENTORY</div>
-                            <div class="upgrade-description">Single unit purchase - price linked to token market</div>
-                        </div>
-                        <button class="upgrade-cost" id="buyLemons" onclick="buyLemons()">
-                            LOADING...
-                        </button>
-                    </div>
-
-                    <div class="upgrade-item">
-                        <div class="upgrade-info">
-                            <div class="upgrade-name">BULK ORDER (10X)</div>
-                            <div class="upgrade-description">Volume discount - pricing follows token volatility</div>
-                        </div>
-                        <button class="upgrade-cost" id="buyBulkLemons" onclick="buyBulkLemons()">
-                            LOADING...
-                        </button>
-                    </div>
-                    
-                    <div class="upgrade-item">
-                        <div class="upgrade-info">
                             <div class="upgrade-name">SUGAR SUPPLY</div>
                             <div class="upgrade-description">Essential sweetener - improves taste profile</div>
                         </div>
                         <button class="upgrade-cost" onclick="buyMarketItem('sugar', 2.50)">
                             $2.50
+                        </button>
+                    </div>
+                    
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">PREMIUM INGREDIENTS</div>
+                            <div class="upgrade-description">Higher quality materials - better profit margins</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('premiumIngredients', 5.00)">
+                            $5.00
+                        </button>
+                    </div>
+
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">BASIC MARKETING</div>
+                            <div class="upgrade-description">Simple signage - attract more customers</div>
+                        </div>
+                        <button class="upgrade-cost" onclick="buyMarketItem('basicMarketing', 8.00)">
+                            $8.00
                         </button>
                     </div>
                 </div>
@@ -608,7 +864,7 @@
                 </div>
             </div>
 
-            <!-- Upgrades Panel -->
+            <!-- Systems Panel -->
             <div class="panel">
                 <h2>SYSTEMS</h2>
                 <div id="upgradesList">
@@ -642,26 +898,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Progress Panel -->
-            <div class="panel progress-section">
-                <h2>ANALYTICS</h2>
-                <div>
-                    <strong>TOTAL UNITS SOLD: </strong><span id="totalCupsSold">0</span>
-                </div>
-                <div>
-                    <strong>TOTAL REVENUE: </strong><span id="totalRevenue">$0.00</span>
-                </div>
-                <div>
-                    <strong>CURRENT THROUGHPUT: </strong><span id="cupsPerSecond">0</span>
-                </div>
-                
-                <div id="achievements">
-                    <!-- Achievements will be added here dynamically -->
-                </div>
-
-
             </div>
         </div>
     </div>
