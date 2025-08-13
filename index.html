@@ -3,62 +3,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lemonade Stand 🍋</title>
+    <title>Lemonade Stand Tycoon 🍋</title>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #FFE135 0%, #FFA500 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding: 20px;
+            color: #333;
         }
-        .container {
-            background: white;
-            padding: 40px;
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            text-align: center;
-            max-width: 500px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
-        h1 {
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 3em;
             color: #FF6B35;
-            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #666;
+            font-style: italic;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .panel h2 {
+            color: #FF6B35;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #FFE135;
+            padding-bottom: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
             margin-bottom: 20px;
         }
-        p {
+
+        .stat {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #FF6B35;
+            display: block;
+        }
+
+        .stat-label {
             color: #666;
-            font-size: 1.2em;
-            line-height: 1.6;
+            font-size: 0.9em;
+            margin-top: 5px;
         }
-        .lemon {
-            font-size: 4em;
-            margin: 20px 0;
+
+        .action-button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+            font-weight: bold;
         }
-        .button {
+
+        .primary-button {
             background: #FF6B35;
             color: white;
+        }
+
+        .primary-button:hover:not(:disabled) {
+            background: #E55A2B;
+            transform: translateY(-2px);
+        }
+
+        .secondary-button {
+            background: #FFE135;
+            color: #333;
+        }
+
+        .secondary-button:hover:not(:disabled) {
+            background: #FFD700;
+            transform: translateY(-2px);
+        }
+
+        .action-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .upgrade-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .upgrade-info {
+            flex: 1;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .upgrade-description {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .upgrade-cost {
+            background: #FF6B35;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
             border: none;
-            padding: 15px 30px;
-            font-size: 1.1em;
-            border-radius: 25px;
             cursor: pointer;
             transition: background 0.3s ease;
-            margin-top: 20px;
         }
-        .button:hover {
+
+        .upgrade-cost:hover:not(:disabled) {
             background: #E55A2B;
+        }
+
+        .upgrade-cost:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            grid-column: 1 / -1;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 20px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #FFE135, #FF6B35);
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .achievement {
+            background: #e8f5e8;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 5px 0;
+            color: #2e7d32;
+        }
+
+        @media (max-width: 768px) {
+            .game-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .title {
+                font-size: 2em;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="lemon">🍋</div>
-        <h1>Welcome to Lemonade Stand!</h1>
-        <p>Your refreshing project is ready to grow! This is just the beginning of something sweet.</p>
-        <button class="button" onclick="alert('Time to start coding! 🚀')">Get Started</button>
+    <div class="game-container">
+        <div class="header">
+            <h1 class="title">🍋 Lemonade Stand Tycoon</h1>
+            <p class="subtitle">A Capitalist Simulation</p>
+        </div>
+
+        <div class="game-grid">
+            <!-- Production Panel -->
+            <div class="panel">
+                <h2>🏪 Your Stand</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-value" id="money">$0.00</span>
+                        <span class="stat-label">Money</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="lemons">0</span>
+                        <span class="stat-label">Lemons</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="cups">0</span>
+                        <span class="stat-label">Cups Made</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="rate">0</span>
+                        <span class="stat-label">Cups/sec</span>
+                    </div>
+                </div>
+
+                <button class="action-button primary-button" id="makeLemonade" onclick="makeLemonade()">
+                    🍋 Make Lemonade (1 lemon)
+                </button>
+                
+                <button class="action-button secondary-button" id="sellCup" onclick="sellCup()">
+                    💰 Sell Cup ($0.50)
+                </button>
+            </div>
+
+            <!-- Market Panel -->
+            <div class="panel">
+                <h2>🛒 Market</h2>
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Buy Lemons</div>
+                        <div class="upgrade-description">Fresh lemons for making lemonade</div>
+                    </div>
+                    <button class="upgrade-cost" id="buyLemons" onclick="buyLemons()">
+                        $0.10
+                    </button>
+                </div>
+
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Bulk Lemons (10x)</div>
+                        <div class="upgrade-description">Buy lemons in bulk for better prices</div>
+                    </div>
+                    <button class="upgrade-cost" id="buyBulkLemons" onclick="buyBulkLemons()">
+                        $0.90
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upgrades Panel -->
+            <div class="panel">
+                <h2>⚡ Upgrades</h2>
+                <div id="upgradesList">
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">Better Recipe</div>
+                            <div class="upgrade-description">Sell cups for $0.75 instead of $0.50</div>
+                        </div>
+                        <button class="upgrade-cost" id="betterRecipe" onclick="buyUpgrade('betterRecipe')">
+                            $25.00
+                        </button>
+                    </div>
+
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">Auto Squeezer</div>
+                            <div class="upgrade-description">Automatically makes 1 cup per second</div>
+                        </div>
+                        <button class="upgrade-cost" id="autoSqueezer" onclick="buyUpgrade('autoSqueezer')">
+                            $100.00
+                        </button>
+                    </div>
+
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">Marketing Campaign</div>
+                            <div class="upgrade-description">Automatically sells 1 cup per second</div>
+                        </div>
+                        <button class="upgrade-cost" id="marketing" onclick="buyUpgrade('marketing')">
+                            $500.00
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Panel -->
+            <div class="panel progress-section">
+                <h2>📈 Progress</h2>
+                <div>
+                    <strong>Total Cups Sold: </strong><span id="totalCupsSold">0</span>
+                </div>
+                <div>
+                    <strong>Total Revenue: </strong><span id="totalRevenue">$0.00</span>
+                </div>
+                <div>
+                    <strong>Cups per Second: </strong><span id="cupsPerSecond">0</span>
+                </div>
+                
+                <div id="achievements">
+                    <!-- Achievements will be added here dynamically -->
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button class="action-button secondary-button" onclick="saveGame()">💾 Save Game</button>
+                    <button class="action-button secondary-button" onclick="loadGame()">📁 Load Game</button>
+                    <button class="action-button secondary-button" onclick="resetGame()">🔄 Reset Game</button>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <script src="game.js"></script>
 </body>
 </html>
