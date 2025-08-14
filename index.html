@@ -326,6 +326,128 @@
             margin-top: 10px;
         }
 
+        /* Recipe Controls */
+        .section-divider {
+            color: #ffff00;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333333;
+        }
+
+        .recipe-controls {
+            margin-bottom: 15px;
+        }
+
+        .ingredient-control {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+        }
+
+        .ingredient-header {
+            margin-bottom: 5px;
+        }
+
+        .ingredient-label {
+            font-size: 0.8em;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slider-label-left,
+        .slider-label-right {
+            font-size: 0.7em;
+            color: #888888;
+            min-width: 35px;
+            text-align: center;
+        }
+
+        .slider-label-left {
+            text-align: left;
+        }
+
+        .slider-label-right {
+            text-align: right;
+        }
+
+        .ingredient-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: #333333;
+            outline: none;
+            border-radius: 2px;
+            flex: 1;
+        }
+
+        .ingredient-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #ffff00;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .ingredient-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #ffff00;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+
+        .recipe-cost-display {
+            font-size: 0.9em;
+            color: #ffff00;
+            text-align: center;
+            margin-top: 8px;
+            padding: 5px;
+            border: 1px solid #333333;
+            background: #1a1a1a;
+        }
+
+        /* Customer Satisfaction */
+        .satisfaction-display {
+            margin-bottom: 15px;
+        }
+
+        .satisfaction-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .satisfaction-label {
+            color: #888888;
+        }
+
+        .satisfaction-value {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .satisfaction-feedback {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
         .quick-button {
             flex: 1;
             background: #2a2a2a;
@@ -515,8 +637,81 @@
                     </div>
                 </div>
 
+                <!-- Recipe Controls -->
+                <div class="section-divider">RECIPE OPTIMIZATION</div>
+                <div class="recipe-controls">
+                    <div class="ingredient-control">
+                        <div class="ingredient-header">
+                            <label class="ingredient-label">LEMON INTENSITY: <span id="lemon-amount">1.0</span></label>
+                        </div>
+                        <div class="slider-container">
+                            <span class="slider-label-left">LIGHT</span>
+                            <input type="range" id="lemon-slider" class="ingredient-slider" 
+                                   min="0.8" max="1.2" step="0.05" value="1.0" 
+                                   oninput="adjustRecipe('lemons', this.value)">
+                            <span class="slider-label-right">HEAVY</span>
+                        </div>
+                    </div>
+                    <div class="ingredient-control">
+                        <div class="ingredient-header">
+                            <label class="ingredient-label">DILUTION: <span id="water-amount">1.0</span></label>
+                        </div>
+                        <div class="slider-container">
+                            <span class="slider-label-left">LIGHT</span>
+                            <input type="range" id="water-slider" class="ingredient-slider" 
+                                   min="0.8" max="1.2" step="0.05" value="1.0" 
+                                   oninput="adjustRecipe('water', this.value)">
+                            <span class="slider-label-right">HEAVY</span>
+                        </div>
+                    </div>
+                    <div class="ingredient-control">
+                        <div class="ingredient-header">
+                            <label class="ingredient-label">SWEETNESS: <span id="sugar-amount">0.5</span></label>
+                        </div>
+                        <div class="slider-container">
+                            <span class="slider-label-left">LIGHT</span>
+                            <input type="range" id="sugar-slider" class="ingredient-slider" 
+                                   min="0.4" max="0.6" step="0.025" value="0.5" 
+                                   oninput="adjustRecipe('sugar', this.value)">
+                            <span class="slider-label-right">HEAVY</span>
+                        </div>
+                    </div>
+                    <div class="ingredient-control">
+                        <div class="ingredient-header">
+                            <label class="ingredient-label">CHILL FACTOR: <span id="ice-amount">0.8</span></label>
+                        </div>
+                        <div class="slider-container">
+                            <span class="slider-label-left">LIGHT</span>
+                            <input type="range" id="ice-slider" class="ingredient-slider" 
+                                   min="0.6" max="1.0" step="0.05" value="0.8" 
+                                   oninput="adjustRecipe('ice', this.value)">
+                            <span class="slider-label-right">HEAVY</span>
+                        </div>
+                    </div>
+                    <div class="recipe-cost-display">
+                        COST PER UNIT: <span id="recipe-cost">$0.000</span>
+                    </div>
+                </div>
+
+                <!-- Customer Satisfaction -->
+                <div class="section-divider">CUSTOMER SATISFACTION</div>
+                <div class="satisfaction-display">
+                    <div class="satisfaction-row">
+                        <span class="satisfaction-label">CURRENT:</span>
+                        <span class="satisfaction-value" id="satisfaction-score">75%</span>
+                    </div>
+                    <div class="satisfaction-row">
+                        <span class="satisfaction-label">AVERAGE:</span>
+                        <span class="satisfaction-value" id="satisfaction-average">75%</span>
+                    </div>
+                    <div class="satisfaction-row">
+                        <span class="satisfaction-label">FEEDBACK:</span>
+                        <span class="satisfaction-feedback" id="satisfaction-feedback">BALANCED</span>
+                    </div>
+                </div>
+
                 <div class="action-row">
-                    <button class="action-button primary-button" id="makeLemonade" onclick="makeLemonade()">
+                <button class="action-button primary-button" id="makeLemonade" onclick="makeLemonade()">
                         PRODUCE UNIT
                     </button>
                     <button class="action-button secondary-button" id="sellCup" onclick="sellCup()">
@@ -733,8 +928,8 @@
                 
                 <!-- Basic Market Items -->
                 <div id="basic-market" class="market-content active">
-                    <div class="upgrade-item">
-                        <div class="upgrade-info">
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
                             <div class="upgrade-name">SUGAR SUPPLY</div>
                             <div class="upgrade-description">Essential sweetener - improves taste profile</div>
                         </div>
@@ -750,11 +945,11 @@
                         </div>
                         <button class="upgrade-cost" onclick="buyMarketItem('premiumIngredients', 5.00)">
                             $5.00
-                        </button>
-                    </div>
+                    </button>
+                </div>
 
-                    <div class="upgrade-item">
-                        <div class="upgrade-info">
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
                             <div class="upgrade-name">BASIC MARKETING</div>
                             <div class="upgrade-description">Simple signage - attract more customers</div>
                         </div>
@@ -859,7 +1054,7 @@
                         </div>
                         <button class="upgrade-cost" onclick="buyMarketItem('ipo', 10000.00)">
                             $10,000.00
-                        </button>
+                    </button>
                     </div>
                 </div>
             </div>

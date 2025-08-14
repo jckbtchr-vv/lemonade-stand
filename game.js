@@ -17,6 +17,27 @@ let gameState = {
     sugar: 5,
     ice: 8,
     
+    // Recipe settings (per cup) - subtle adjustments around base amounts
+    recipe: {
+        lemons: 1.0,    // Base: 1 lemon per cup (0.8-1.2 range)
+        water: 1.0,     // Base: 1 unit water per cup (0.8-1.2 range)
+        sugar: 0.5,     // Base: 0.5 units sugar per cup (0.4-0.6 range)
+        ice: 0.8        // Base: 0.8 units ice per cup (0.6-1.0 range)
+    },
+    
+    // Customer satisfaction tracking
+    satisfaction: {
+        current: 75,    // Current satisfaction score (0-100)
+        average: 75,    // Rolling average
+        lastFeedback: "BALANCED",
+        sweetSpot: {
+            lemons: 1.1,    // Optimal lemon ratio (subtle preference)
+            water: 0.9,     // Optimal water ratio (slightly less water)
+            sugar: 0.55,    // Optimal sugar ratio (slightly sweeter)
+            ice: 0.85       // Optimal ice ratio (slightly more ice)
+        }
+    },
+    
     upgrades: {
         betterRecipe: { owned: false, cost: 25.00 },
         autoSqueezer: { owned: false, cost: 100.00, rate: 1 },
@@ -37,11 +58,143 @@ let gameState = {
 
 // Game Logic Functions
 function makeLemonade() {
-    if (gameState.lemons >= 1) {
-        gameState.lemons--;
+    const recipe = gameState.recipe;
+    
+    // Check if we have enough ingredients
+    if (gameState.lemons >= recipe.lemons && 
+        gameState.water >= recipe.water && 
+        gameState.sugar >= recipe.sugar && 
+        gameState.ice >= recipe.ice) {
+        
+        // Consume ingredients
+        gameState.lemons -= recipe.lemons;
+        gameState.water -= recipe.water;
+        gameState.sugar -= recipe.sugar;
+        gameState.ice -= recipe.ice;
+        
+        // Calculate satisfaction based on recipe
+        const satisfaction = calculateSatisfaction(recipe);
+        gameState.satisfaction.current = satisfaction;
+        
+        // Update rolling average
+        if (gameState.totalCupsSold > 0) {
+            gameState.satisfaction.average = 
+                (gameState.satisfaction.average * 0.8) + (satisfaction * 0.2);
+        } else {
+            gameState.satisfaction.average = satisfaction;
+        }
+        
         gameState.cups++;
         updateDisplay();
+        updateSatisfactionDisplay();
     }
+}
+
+function calculateSatisfaction(recipe) {
+    const sweetSpot = gameState.satisfaction.sweetSpot;
+    let score = 100;
+    
+    // Calculate deviation from sweet spot for each ingredient
+    const deviations = {
+        lemons: Math.abs(recipe.lemons - sweetSpot.lemons) / sweetSpot.lemons,
+        water: Math.abs(recipe.water - sweetSpot.water) / sweetSpot.water,
+        sugar: Math.abs(recipe.sugar - sweetSpot.sugar) / sweetSpot.sugar,
+        ice: Math.abs(recipe.ice - sweetSpot.ice) / sweetSpot.ice
+    };
+    
+    // Penalize deviations (more severe for larger deviations)
+    Object.values(deviations).forEach(deviation => {
+        const penalty = Math.pow(deviation * 50, 1.5);
+        score -= penalty;
+    });
+    
+    // Ensure score stays within bounds
+    score = Math.max(0, Math.min(100, score));
+    
+    // Update feedback based on score with more helpful hints
+    if (score >= 90) {
+        gameState.satisfaction.lastFeedback = "PERFECT BLEND";
+    } else if (score >= 80) {
+        gameState.satisfaction.lastFeedback = "EXCELLENT";
+    } else if (score >= 70) {
+        gameState.satisfaction.lastFeedback = "VERY GOOD";
+    } else if (score >= 60) {
+        gameState.satisfaction.lastFeedback = "GOOD";
+    } else if (score >= 50) {
+        gameState.satisfaction.lastFeedback = "BALANCED";
+    } else if (score >= 40) {
+        gameState.satisfaction.lastFeedback = "NEEDS TWEAKING";
+    } else if (score >= 30) {
+        gameState.satisfaction.lastFeedback = "OFF BALANCE";
+    } else {
+        gameState.satisfaction.lastFeedback = "WAY OFF";
+    }
+    
+    return Math.round(score);
+}
+
+function adjustRecipe(ingredient, value) {
+    gameState.recipe[ingredient] = parseFloat(value);
+    updateRecipeDisplay();
+    updateRecipeCost();
+}
+
+function updateRecipeDisplay() {
+    // Update slider values in UI
+    document.getElementById('lemon-slider').value = gameState.recipe.lemons;
+    document.getElementById('water-slider').value = gameState.recipe.water;
+    document.getElementById('sugar-slider').value = gameState.recipe.sugar;
+    document.getElementById('ice-slider').value = gameState.recipe.ice;
+    
+    // Update labels with appropriate precision
+    document.getElementById('lemon-amount').textContent = gameState.recipe.lemons.toFixed(2);
+    document.getElementById('water-amount').textContent = gameState.recipe.water.toFixed(2);
+    document.getElementById('sugar-amount').textContent = gameState.recipe.sugar.toFixed(3);
+    document.getElementById('ice-amount').textContent = gameState.recipe.ice.toFixed(2);
+}
+
+function updateRecipeCost() {
+    const recipe = gameState.recipe;
+    const totalCost = (recipe.lemons * gameState.lemonCost) + 
+                     (recipe.water * 0.02) + 
+                     (recipe.sugar * 0.03) + 
+                     (recipe.ice * 0.01);
+    
+    document.getElementById('recipe-cost').textContent = '$' + totalCost.toFixed(3);
+    
+    // Update make lemonade button state
+    const canMake = gameState.lemons >= recipe.lemons && 
+                   gameState.water >= recipe.water && 
+                   gameState.sugar >= recipe.sugar && 
+                   gameState.ice >= recipe.ice;
+    
+    const makeButton = document.getElementById('makeLemonade');
+    makeButton.disabled = !canMake;
+    makeButton.textContent = canMake ? 'PRODUCE UNIT' : 'INSUFFICIENT INGREDIENTS';
+}
+
+function updateSatisfactionDisplay() {
+    const satisfaction = gameState.satisfaction;
+    
+    // Update satisfaction meter
+    document.getElementById('satisfaction-score').textContent = satisfaction.current + '%';
+    document.getElementById('satisfaction-average').textContent = Math.round(satisfaction.average) + '%';
+    document.getElementById('satisfaction-feedback').textContent = satisfaction.lastFeedback;
+    
+    // Color code satisfaction
+    const scoreElement = document.getElementById('satisfaction-score');
+    const avgElement = document.getElementById('satisfaction-average');
+    const feedbackElement = document.getElementById('satisfaction-feedback');
+    
+    let color = '#ffffff';
+    if (satisfaction.current >= 85) color = '#ffff00'; // Yellow for excellent
+    else if (satisfaction.current >= 70) color = '#00ff00'; // Green for good
+    else if (satisfaction.current >= 50) color = '#ffffff'; // White for fair
+    else if (satisfaction.current >= 30) color = '#ff8800'; // Orange for poor
+    else color = '#ff0000'; // Red for terrible
+    
+    scoreElement.style.color = color;
+    feedbackElement.style.color = color;
 }
 
 function sellCup() {
@@ -114,21 +267,21 @@ function buyUpgrade(upgradeId) {
 
 function updateDisplay() {
     document.getElementById('money').textContent = `$${gameState.money.toFixed(2)}`;
-    document.getElementById('lemons').textContent = gameState.lemons;
+    document.getElementById('lemons').textContent = gameState.lemons.toFixed(2);
     document.getElementById('cups').textContent = gameState.cups;
     document.getElementById('totalCupsSold').textContent = gameState.totalCupsSold;
     document.getElementById('totalRevenue').textContent = `$${gameState.totalRevenue.toFixed(2)}`;
     document.getElementById('cupsPerSecond').textContent = gameState.cupsPerSecond.toFixed(1);
     document.getElementById('rate').textContent = gameState.cupsPerSecond.toFixed(1);
     
-    // Update supply counts
-    document.getElementById('lemonCount').textContent = gameState.lemons;
-    document.getElementById('waterCount').textContent = gameState.water;
-    document.getElementById('sugarCount').textContent = gameState.sugar;
-    document.getElementById('iceCount').textContent = gameState.ice;
+    // Update supply counts (rounded to 2 decimal places for consistent display)
+    document.getElementById('lemonCount').textContent = gameState.lemons.toFixed(2);
+    document.getElementById('waterCount').textContent = gameState.water.toFixed(2);
+    document.getElementById('sugarCount').textContent = gameState.sugar.toFixed(2);
+    document.getElementById('iceCount').textContent = gameState.ice.toFixed(2);
     
-    // Update button states
-    document.getElementById('makeLemonade').disabled = gameState.lemons < 1;
+    // Update recipe cost and button states
+    updateRecipeCost();
     document.getElementById('sellCup').disabled = gameState.cups < 1;
     document.getElementById('sellCup').textContent = `EXECUTE SALE ($${gameState.cupPrice.toFixed(2)})`;
     
@@ -1212,6 +1365,10 @@ function initGame() {
     // Update market buttons after display to ensure correct prices
     updateMarketButtons();
     updateSupplyButtons();
+    
+    // Initialize recipe display and satisfaction
+    updateRecipeDisplay();
+    updateSatisfactionDisplay();
     
     // Initialize the dynamic cost display
     const dynamicCostElement = document.getElementById('dynamicLemonCost');
