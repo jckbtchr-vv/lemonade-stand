@@ -1,10 +1,8 @@
-# Lemonade Stand 🍋
-
-A delightful lemonade stand project!
+# Lemonade Stand 
 
 ## Description
 
-Welcome to the Lemonade Stand project! This is a fresh start for building something amazing.
+A Visualize Value Market Simulation
 
 ## Getting Started
 
