@@ -58,11 +58,9 @@
         }
 
         .game-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            column-count: 3;
+            column-gap: 20px;
             margin-bottom: 20px;
-            align-items: start;
         }
 
         .panel {
@@ -71,8 +69,8 @@
             border-radius: 0;
             padding: 20px;
             box-shadow: none;
-            height: fit-content;
-            align-self: start;
+            break-inside: avoid;
+            margin-bottom: 20px;
         }
 
         .panel h2 {
@@ -299,14 +297,7 @@
             background: #555;
         }
 
-        /* Compact Panel Styling */
-        .compact-panel {
-            padding: 20px !important;
-        }
 
-        .compact-panel h2 {
-            display: none; /* Remove header to save space */
-        }
 
         .action-row {
             display: flex;
@@ -578,6 +569,111 @@
             border-color: #ffff00;
         }
 
+        /* Location & Weather Module Styling */
+        .weather-main {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #333;
+            background: #111;
+        }
+
+        .weather-icon {
+            font-size: 2.5em;
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .weather-info {
+            flex: 1;
+        }
+
+        .weather-condition {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffff00;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .weather-temp {
+            font-size: 1.5em;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .network-status {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #333;
+            background: #0a0a0a;
+        }
+
+        .status-label {
+            display: block;
+            font-size: 0.6em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            display: block;
+            font-size: 0.9em;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .heat-bar-container {
+            padding: 15px;
+            border: 1px solid #333;
+            background: #0a0a0a;
+        }
+
+        .heat-label {
+            font-size: 0.8em;
+            color: #ffff00;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .heat-bar {
+            width: 100%;
+            height: 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .heat-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0066ff, #00ff00, #ffff00, #ff6600, #ff0000);
+            transition: width 0.5s ease;
+            border-radius: 9px;
+        }
+
+        .heat-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6em;
+            color: #888;
+            text-transform: uppercase;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 1200px) {
             .game-grid {
@@ -616,7 +712,7 @@
 
         <div class="game-grid">
             <!-- Operations Panel -->
-            <div class="panel compact-panel">
+            <div class="panel">
                 <div class="stats">
                     <div class="stat">
                         <span class="stat-value" id="money">$0.00</span>
@@ -783,7 +879,7 @@
                             <button class="supply-button" onclick="buySupply('sugar', 0.08)">
                                 +1 $0.08
                             </button>
-                            <button class="supply-button bulk" onclick="buySupply('sugar', 0.72, 10)">
+                            <button class="supply-button bulk" onclick="buySupply('water', 0.72, 10)">
                                 +10 $0.72
                             </button>
                         </div>
@@ -801,7 +897,51 @@
                             <button class="supply-button bulk" onclick="buySupply('ice', 0.27, 10)">
                                 +10 $0.27
                             </button>
+                            </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location & Weather Module -->
+            <div class="panel">
+                <h2>NETWORK WEATHER</h2>
+                
+                <!-- Current Conditions -->
+                <div class="weather-main">
+                    <div class="weather-icon" id="weatherIcon">🔥</div>
+                    <div class="weather-info">
+                        <div class="weather-condition" id="weatherCondition">HOT</div>
+                        <div class="weather-temp" id="weatherTemp">85°F</div>
+                    </div>
+                </div>
+                
+                <!-- Network Status -->
+                <div class="network-status">
+                    <div class="status-item">
+                        <span class="status-label">NETWORK:</span>
+                        <span class="status-value" id="networkStatus">BUSY</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">TRAFFIC:</span>
+                        <span class="status-value" id="trafficLevel">HIGH</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">CUSTOMERS:</span>
+                        <span class="status-value" id="customerMultiplier">1.3x</span>
+                    </div>
+                </div>
+                
+                <!-- Heat Bar -->
+                <div class="heat-bar-container">
+                    <div class="heat-label">NETWORK HEAT</div>
+                    <div class="heat-bar">
+                        <div class="heat-fill" id="heatFill" style="width: 70%"></div>
+                    </div>
+                    <div class="heat-scale">
+                        <span>COLD</span>
+                        <span>WARM</span>
+                        <span>HOT</span>
                     </div>
                 </div>
             </div>

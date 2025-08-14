@@ -38,6 +38,18 @@ let gameState = {
         }
     },
     
+    // Weather and location system
+    weather: {
+        current: {
+            condition: "HOT",
+            icon: "🔥",
+            temperature: 85,
+            networkStatus: "BUSY",
+            trafficLevel: "HIGH",
+            customerMultiplier: 1.3
+        }
+    },
+    
     upgrades: {
         betterRecipe: { owned: false, cost: 25.00 },
         autoSqueezer: { owned: false, cost: 100.00, rate: 1 },
@@ -133,6 +145,105 @@ function calculateSatisfaction(recipe) {
     return Math.round(score);
 }
 
+// Weather System Functions
+function updateWeatherFromGasPrice(gasPrice) {
+    const weather = gameState.weather.current;
+    
+    // Convert gas price to weather conditions
+    if (gasPrice >= 100) {
+        // High gas = Hot weather (network congestion)
+        weather.condition = "HOT";
+        weather.icon = "🔥";
+        weather.temperature = 85 + Math.floor(Math.random() * 15);
+        weather.networkStatus = "BUSY";
+        weather.trafficLevel = "HIGH";
+        weather.customerMultiplier = 1.3;
+    } else if (gasPrice >= 50) {
+        // Medium gas = Warm weather
+        weather.condition = "WARM";
+        weather.icon = "🌤️";
+        weather.temperature = 70 + Math.floor(Math.random() * 10);
+        weather.networkStatus = "MODERATE";
+        weather.trafficLevel = "MODERATE";
+        weather.customerMultiplier = 1.1;
+    } else if (gasPrice >= 20) {
+        // Low gas = Cool weather
+        weather.condition = "COOL";
+        weather.icon = "⛅";
+        weather.temperature = 65 + Math.floor(Math.random() * 8);
+        weather.networkStatus = "NORMAL";
+        weather.trafficLevel = "MODERATE";
+        weather.customerMultiplier = 1.0;
+    } else if (gasPrice >= 10) {
+        // Very low gas = Cold weather
+        weather.condition = "COLD";
+        weather.icon = "🌧️";
+        weather.temperature = 60 + Math.floor(Math.random() * 8);
+        weather.networkStatus = "LOW";
+        weather.trafficLevel = "LOW";
+        weather.customerMultiplier = 0.7;
+    } else {
+        // Extremely low gas = Freezing weather
+        weather.condition = "FREEZING";
+        weather.icon = "❄️";
+        weather.temperature = 55 + Math.floor(Math.random() * 8);
+        weather.networkStatus = "DEAD";
+        weather.trafficLevel = "VERY LOW";
+        weather.customerMultiplier = 0.4;
+    }
+    
+    // Update display
+    updateWeatherDisplay();
+    
+    // Apply weather effects to game mechanics
+    applyWeatherEffects();
+}
+
+function applyWeatherEffects() {
+    const weather = gameState.weather.current;
+    
+    // Apply customer multiplier to auto-sell rate
+    gameState.autoSellRate = gameState.autoSellRate * weather.customerMultiplier;
+    
+    // Update display to reflect new values
+    updateDisplay();
+}
+
+function updateWeatherDisplay() {
+    const weather = gameState.weather.current;
+    
+    // Update main weather display
+    document.getElementById('weatherIcon').textContent = weather.icon;
+    document.getElementById('weatherCondition').textContent = weather.condition;
+    document.getElementById('weatherTemp').textContent = weather.temperature + '°F';
+    document.getElementById('networkStatus').textContent = weather.networkStatus;
+    document.getElementById('trafficLevel').textContent = weather.trafficLevel;
+    document.getElementById('customerMultiplier').textContent = weather.customerMultiplier.toFixed(1) + 'x';
+    
+    // Update heat bar based on temperature (50°F = 0%, 100°F = 100%)
+    const heatPercentage = Math.min(100, Math.max(0, ((weather.temperature - 50) / 50) * 100));
+    document.getElementById('heatFill').style.width = heatPercentage + '%';
+}
+
+// Simulate Ethereum gas price changes (for demo purposes)
+function simulateGasPriceChanges() {
+    // Simulate realistic gas price fluctuations
+    const currentGas = 50; // Base gas price
+    const change = (Math.random() - 0.5) * 80; // ±40 gwei change
+    const newGas = Math.max(5, Math.min(200, currentGas + change));
+    
+    updateWeatherFromGasPrice(newGas);
+}
+
+// Initialize weather system
+function initWeatherSystem() {
+    // Set initial weather
+    updateWeatherFromGasPrice(50);
+    
+    // Update weather every 30 seconds to simulate network changes
+    setInterval(simulateGasPriceChanges, 30000);
+}
+
 function adjustRecipe(ingredient, value) {
     gameState.recipe[ingredient] = parseFloat(value);
     updateRecipeDisplay();
@@ -170,7 +281,7 @@ function updateRecipeCost() {
     
     const makeButton = document.getElementById('makeLemonade');
     makeButton.disabled = !canMake;
-    makeButton.textContent = canMake ? 'PRODUCE UNIT' : 'INSUFFICIENT INGREDIENTS';
+    makeButton.textContent = canMake ? 'MAKE LEMONADE' : 'INSUFFICIENT INGREDIENTS';
 }
 
 function updateSatisfactionDisplay() {
@@ -1375,6 +1486,9 @@ function initGame() {
     if (dynamicCostElement) {
         dynamicCostElement.textContent = gameState.lemonCost.toFixed(2);
     }
+    
+    // Initialize weather system
+    initWeatherSystem();
     
     // Start game loop (runs every second)
     setInterval(gameLoop, 1000);
