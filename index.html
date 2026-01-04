@@ -58,6 +58,13 @@
       gap: 16px;
     }
 
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
     .panel {
       border: 1px solid #333;
       padding: 16px;
@@ -170,8 +177,81 @@
       line-height: 1.3;
     }
 
+    .price-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 0.7rem;
+    }
+
+    .price-meta-item {
+      border: 1px solid #333;
+      padding: 6px 8px;
+    }
+
+    .price-value {
+      display: block;
+      font-size: 0.9rem;
+      margin-top: 2px;
+    }
+
+    #chartContainer {
+      position: relative;
+      border: 1px solid #333;
+      background: #111;
+      padding: 4px;
+      height: 180px;
+    }
+
+    #priceChart {
+      width: 100%;
+      height: 140px;
+      display: block;
+    }
+
+    .chart-status {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.7rem;
+      color: #888;
+      pointer-events: none;
+    }
+
+    .tx-list {
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid #333;
+      padding: 6px 8px;
+      font-size: 0.7rem;
+    }
+
+    .tx-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+
+    .tx-hash {
+      font-size: 0.6rem;
+      color: #666;
+      word-break: break-all;
+      margin-bottom: 4px;
+    }
+
+    .muted {
+      color: #777;
+      font-size: 0.7rem;
+    }
+
     @media (max-width: 800px) {
       .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .analytics-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -223,6 +303,36 @@
           off-chain and for illustrative purposes only. No tokens are earned,
           distributed, or withdrawn by playing.
         </div>
+
+        <div id="advancedSystems" style="display: none; margin-top: 16px;">
+          <h3 style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #ffff00; margin-bottom: 6px;">
+            Advanced Systems (Unlocked by Stake)
+          </h3>
+          <p class="muted" style="margin-bottom: 8px;">
+            When your on-chain (or simulated) stake meets the threshold,
+            this panel reveals higher-level metrics about the lemonade
+            network – production efficiency, scale and saturation – without
+            affecting any real-world balances.
+          </p>
+          <div class="stats">
+            <div class="stat">
+              <span class="stat-value" id="efficiencyMetric">-</span>
+              <span class="stat-label">EFFICIENCY INDEX</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="scaleMetric">-</span>
+              <span class="stat-label">SCALE FACTOR</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="saturationMetric">-</span>
+              <span class="stat-label">MARKET SATURATION</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="innovationMetric">-</span>
+              <span class="stat-label">INNOVATION PRESSURE</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Wallet panel -->
@@ -267,6 +377,51 @@
           The wallet panel only <strong>reads</strong> your token balance on
           Base. This interface does <strong>not</strong> send, receive, or
           burn tokens.
+        </div>
+
+        <div class="disclaimer" style="margin-top: 12px;">
+          <strong>Simulated stake only</strong> for design and testing.
+          Use the controls below to preview how an on-chain stake threshold
+          could unlock advanced systems.
+          <br /><br />
+          Required stake: <span id="stakeThreshold">1,000</span> LEMON
+          <br />
+          Current simulated stake: <span id="currentStake">0</span> LEMON
+          <div class="actions" style="margin-top: 8px;">
+            <button onclick="simulateStake(100)">+100 (Simulated)</button>
+            <button onclick="simulateStake(-100)">-100 (Simulated)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analytics-grid">
+      <div class="panel">
+        <h2>Token Price · 24h (DexScreener)</h2>
+        <div class="price-meta">
+          <div class="price-meta-item">
+            <span class="stat-label">Price (USD)</span>
+            <span class="price-value" id="priceUsd">-</span>
+          </div>
+          <div class="price-meta-item">
+            <span class="stat-label">24h Change</span>
+            <span class="price-value" id="priceChange">-</span>
+          </div>
+          <div class="price-meta-item">
+            <span class="stat-label">24h Volume</span>
+            <span class="price-value" id="priceVolume">-</span>
+          </div>
+        </div>
+        <div id="chartContainer">
+          <canvas id="priceChart"></canvas>
+          <div id="chartStatus" class="chart-status">Loading chart…</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Recent Activity (Simulated from Volume)</h2>
+        <div id="txList" class="tx-list">
+          <div class="muted">Waiting for price data…</div>
         </div>
       </div>
     </div>
