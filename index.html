@@ -63,6 +63,8 @@
       padding: 16px;
       background: #000;
       height: 100%;
+      display: flex;
+      flex-direction: column;
     }
 
     .panel h2 {
@@ -200,6 +202,8 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      overflow-y: auto;
+      max-height: 200px;
     }
 
     .upgrade-item {
@@ -246,6 +250,67 @@
       height: 140px;
       display: block;
       background: #111;
+    }
+
+    .report-log {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      border-top: 1px solid #333;
+      padding-top: 16px;
+    }
+
+    .report-card {
+      border: 1px solid #333;
+      background: #0a0a0a;
+      padding: 12px;
+      font-size: 0.8rem;
+    }
+
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: #ffff00;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.7rem;
+    }
+
+    .report-body {
+      color: #ccc;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .report-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      border-top: 1px solid #333;
+      padding-top: 8px;
+      font-size: 0.7rem;
+      color: #888;
+    }
+
+    .report-metric span {
+      display: block;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .market-event {
+      margin-top: 8px;
+      padding: 6px;
+      background: #111;
+      border: 1px solid #444;
+      color: #00ff00;
+      font-size: 0.7rem;
+      text-transform: uppercase;
     }
 
     .muted {
@@ -329,29 +394,20 @@
           </button>
           <span id="cooldownMessage" class="muted"></span>
         </div>
+
+        <!-- Shift Intelligence Log -->
+        <div id="shiftReports" class="report-log">
+          <!-- Reports injected here -->
+        </div>
       </div>
 
-      <!-- Right: Contextual Upgrades -->
-      <div class="panel">
+      <!-- Right: Operations, Upgrades & Wallet -->
+      <div class="panel" style="justify-content: flex-start;">
         <h2>Operations & Upgrades</h2>
-        <div id="upgradesList" class="upgrade-list">
+        <div id="upgradesList" class="upgrade-list" style="margin-bottom: 20px;">
           <div class="muted">Connect wallet to load operations.</div>
         </div>
-      </div>
-    </div>
 
-    <!-- Bottom: P&L + Wallet -->
-    <div class="bottom-row">
-      <div class="panel chart-container">
-        <h2>P&L (Cumulative Profit)</h2>
-        <canvas id="plChart"></canvas>
-        <div style="margin-top: 8px; display: flex; gap: 16px; font-size: 0.7rem; color: #888;">
-          <span>REV: <span id="totalRevenue" style="color:#fff">$0.00</span></span>
-          <span>COST: <span id="totalCost" style="color:#fff">$0.00</span></span>
-        </div>
-      </div>
-
-      <div class="panel">
         <h2>Wallet Connection</h2>
         <div class="wallet-row" style="margin-top: 8px;">
           <button
@@ -388,6 +444,18 @@
 
         <div id="networkWarning" class="warning" style="display: none;">
           Switch to Base (8453).
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom: P&L -->
+    <div class="bottom-row">
+      <div class="panel chart-container" style="grid-column: span 2;">
+        <h2>P&L (Cumulative Profit)</h2>
+        <canvas id="plChart"></canvas>
+        <div style="margin-top: 8px; display: flex; gap: 16px; font-size: 0.7rem; color: #888;">
+          <span>REV: <span id="totalRevenue" style="color:#fff">$0.00</span></span>
+          <span>COST: <span id="totalCost" style="color:#fff">$0.00</span></span>
         </div>
       </div>
     </div>

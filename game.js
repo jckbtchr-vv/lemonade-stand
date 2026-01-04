@@ -53,7 +53,11 @@ const gameState = {
   opsMultiplier: 1.0,
   
   lastShiftAt: 0,
-  plHistory: []
+  plHistory: [],
+  
+  // Market events (rare temporary mods)
+  activeEvent: null, // { name, type, multiplier, duration }
+  eventTurnsRemaining: 0
 };
 
 const weatherState = {
@@ -63,10 +67,10 @@ const weatherState = {
   demandMultiplier: 1.0
 };
 
-// --- Upgrades Data (Granular & Contextual) ----------------------------------
+// --- Upgrades Data ----------------------------------------------------------
 
 const upgrades = [
-  // TIER 0: STREET STAND
+  // TIER 0
   {
     id: "nicerCups",
     tier: 0,
@@ -104,8 +108,7 @@ const upgrades = [
     owned: false,
     isTierUnlock: true
   },
-
-  // TIER 1: LOCAL FAVORITE
+  // TIER 1
   {
     id: "freshLemons",
     tier: 1,
@@ -143,8 +146,7 @@ const upgrades = [
     owned: false,
     isTierUnlock: true
   },
-
-  // TIER 2: REGIONAL CHAIN
+  // TIER 2
   {
     id: "managerTraining",
     tier: 2,
@@ -182,8 +184,7 @@ const upgrades = [
     owned: false,
     isTierUnlock: true
   },
-
-  // TIER 3: NATIONAL BRAND
+  // TIER 3
   {
     id: "celebrity",
     tier: 3,
@@ -223,6 +224,24 @@ const upgrades = [
   }
 ];
 
+// --- Market Events ----------------------------------------------------------
+
+const MARKET_EVENTS = [
+  { name: "Viral TikTok", type: "DEMAND", mult: 1.5, turns: 3, desc: "A teen influencer rated your stand 10/10." },
+  { name: "Competitor", type: "DEMAND", mult: 0.7, turns: 3, desc: "A rival stand opened across the street." },
+  { name: "Lemon Shortage", type: "COST", mult: 1.5, turns: 2, desc: "Supply chain issues spiked lemon prices." },
+  { name: "Heatwave", type: "DEMAND", mult: 1.8, turns: 1, desc: "Record temps driving massive thirst." },
+  { name: "Health Inspection", type: "OPS", mult: 0.5, turns: 2, desc: "The inspector is slowing everything down." }
+];
+
+function rollMarketEvent() {
+  if (gameState.activeEvent || Math.random() > 0.15) return null; // 15% chance
+  const evt = MARKET_EVENTS[Math.floor(Math.random() * MARKET_EVENTS.length)];
+  gameState.activeEvent = evt;
+  gameState.eventTurnsRemaining = evt.turns;
+  return evt;
+}
+
 // --- Game Logic -------------------------------------------------------------
 
 function updateGameDisplay() {
@@ -231,7 +250,6 @@ function updateGameDisplay() {
   const runButton = document.getElementById("runButton");
   const tierTitle = document.getElementById("tierTitle");
   
-  // Stats
   if (cashEl) cashEl.textContent = formatUsd(gameState.cash);
   if (cupsEl) cupsEl.textContent = gameState.cups.toLocaleString();
   
@@ -246,46 +264,21 @@ function updateGameDisplay() {
   if (varOps) varOps.textContent = `${gameState.opsMultiplier.toFixed(1)}x`;
   if (varHype) varHype.textContent = `${gameState.hype.toFixed(1)}x`;
 
-  // P&L Footer
   const revEl = document.getElementById("totalRevenue");
   const costEl = document.getElementById("totalCost");
   if (revEl) revEl.textContent = formatUsd(gameState.totalRevenue);
   if (costEl) costEl.textContent = formatUsd(gameState.totalCost);
 
-  // Tier Title
   if (tierTitle) tierTitle.textContent = TIERS[gameState.tierIndex];
 
-  // Button State
   if (runButton) {
     runButton.disabled = !isEligible;
     runButton.textContent = isEligible ? "Run Stand" : "Run Stand";
   }
 
-  // Cost to play update (fetch from DexScreener)
   fetchTokenPrice();
-
   updateCooldownUI();
   renderUpgrades();
-}
-
-let lastPriceFetch = 0;
-async function fetchTokenPrice() {
-  const now = Date.now();
-  if (now - lastPriceFetch < 60000) return; // cache for 1 min
-  lastPriceFetch = now;
-
-  try {
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${TOKEN_ADDRESS}`);
-    const data = await res.json();
-    if (data.pairs && data.pairs[0]) {
-      const priceUsd = parseFloat(data.pairs[0].priceUsd);
-      const costFor1k = priceUsd * 1000;
-      const el = document.getElementById("costToPlay");
-      if (el) el.textContent = formatUsd(costFor1k);
-    }
-  } catch (e) {
-    console.error("Price fetch failed", e);
-  }
 }
 
 function runStand() {
@@ -298,37 +291,132 @@ function runStand() {
   gameState.shifts += 1;
   updateWeather();
 
+  // Handle Event Decay
+  let eventMultiplier = 1.0;
+  let eventCostMult = 1.0;
+  let eventOpsMult = 1.0;
+  let currentEvent = gameState.activeEvent;
+
+  if (currentEvent) {
+    if (currentEvent.type === "DEMAND") eventMultiplier = currentEvent.mult;
+    if (currentEvent.type === "COST") eventCostMult = currentEvent.mult;
+    if (currentEvent.type === "OPS") eventOpsMult = currentEvent.mult;
+    
+    gameState.eventTurnsRemaining--;
+    if (gameState.eventTurnsRemaining <= 0) {
+      gameState.activeEvent = null;
+    }
+  }
+
   // Calc output
-  // Base grows slightly with shifts to prevent stagnation
   const base = 5 + Math.floor(gameState.shifts / 10);
   const hypeBonus = Math.floor(gameState.hype * 2);
   
-  // Apply multipliers
   let cups = Math.round(
     (base + hypeBonus) * 
     weatherState.demandMultiplier * 
-    gameState.opsMultiplier
+    gameState.opsMultiplier *
+    eventOpsMult *
+    eventMultiplier
   );
   cups = Math.max(1, cups);
 
   const revenue = cups * gameState.pricePerCup;
-  const cost = cups * gameState.costPerCup;
+  const cost = cups * gameState.costPerCup * eventCostMult;
   const profit = revenue - cost;
 
   gameState.cups += cups;
   gameState.cash += profit;
   gameState.totalRevenue += revenue;
   gameState.totalCost += cost;
-
-  // Passive hype growth from volume
+  
   gameState.hype += (cups / 1000); 
 
-  // History for chart
   gameState.plHistory.push(gameState.cash);
   if (gameState.plHistory.length > 50) gameState.plHistory.shift();
 
+  // Post-shift logic
+  const newEvent = rollMarketEvent(); // Try to spawn new event if slot open
+
+  generateShiftReport({
+    cups, revenue, cost, profit, 
+    weather: weatherState,
+    event: currentEvent,
+    spawnedEvent: newEvent
+  });
+
   updateGameDisplay();
   drawPlChart();
+}
+
+// --- Reporting Engine -------------------------------------------------------
+
+function generateShiftReport(data) {
+  const container = document.getElementById("shiftReports");
+  if (!container) return;
+
+  const efficiency = ((1 - (data.cost / data.revenue)) * 100).toFixed(0);
+  const isLoss = data.profit < 0;
+  
+  // Headlines based on performance
+  let headline = "SHIFT COMPLETE";
+  if (isLoss) headline = "NET LOSS RECORDED";
+  else if (data.cups > 20) headline = "HIGH VOLUME SHIFT";
+  else if (Number(efficiency) > 80) headline = "MAXIMUM EFFICIENCY";
+  else if (data.weather.condition === "HEATWAVE") headline = "HEATWAVE SURGE";
+
+  // Insight narrative
+  let insight = "Operations nominal.";
+  if (isLoss) insight = "Costs exceeded revenue. Market conditions unfavorable.";
+  else if (data.event) insight = `Market impact: ${data.event.name} (${data.event.desc})`;
+  else if (data.weather.demandMultiplier > 1.2) insight = "Weather patterns driving significant foot traffic.";
+  else if (data.weather.demandMultiplier < 0.8) insight = "Adverse weather suppressed demand.";
+  
+  const card = document.createElement("div");
+  card.className = "report-card";
+  
+  let eventHtml = "";
+  if (data.spawnedEvent) {
+    eventHtml = `
+      <div class="market-event">
+        ⚠ MARKET ALERT: ${data.spawnedEvent.name}<br>
+        <span style="color:#888; font-size:0.6rem;">${data.spawnedEvent.desc}</span>
+      </div>
+    `;
+  }
+
+  card.innerHTML = `
+    <div class="report-header">
+      <span>#${gameState.shifts.toString().padStart(4, '0')}</span>
+      <span style="color: ${isLoss ? '#ff4444' : '#00ff00'}">${headline}</span>
+    </div>
+    <div class="report-body">
+      ${insight}
+    </div>
+    <div class="report-metrics">
+      <div class="report-metric">
+        VOL
+        <span>${data.cups}</span>
+      </div>
+      <div class="report-metric">
+        NET
+        <span style="color: ${isLoss ? '#ff4444' : '#fff'}">${formatUsd(data.profit)}</span>
+      </div>
+      <div class="report-metric">
+        EFF
+        <span>${efficiency}%</span>
+      </div>
+    </div>
+    ${eventHtml}
+  `;
+
+  // Prepend to top
+  container.insertBefore(card, container.firstChild);
+  
+  // Limit history
+  if (container.children.length > 20) {
+    container.removeChild(container.lastChild);
+  }
 }
 
 // --- Weather ----------------------------------------------------------------
@@ -370,20 +458,11 @@ function renderUpgrades() {
     return;
   }
 
-  // Filter: show upgrades for CURRENT tier only
-  // Plus any already-owned upgrades from this tier (optional, maybe hide owned to keep clean)
-  // Let's hide owned upgrades to keep the list actionable, unless it's the tier unlocker?
-  // Let's show unowned upgrades for current tier.
-  
   const currentTierUpgrades = upgrades.filter(
     u => u.tier === gameState.tierIndex && !u.owned
   );
 
   if (currentTierUpgrades.length === 0) {
-    // If no upgrades left in this tier, and we aren't at max tier, user might be stuck? 
-    // We ensured each tier has a "tier unlocker". 
-    // If they bought the tier unlocker, tierIndex would increment.
-    // So this case implies they bought everything for this tier.
     if (gameState.tierIndex === TIERS.length - 1) {
       listEl.innerHTML = '<div class="muted">You have reached the pinnacle of lemonade capitalism.</div>';
     } else {
@@ -401,7 +480,7 @@ function renderUpgrades() {
       <div class="upgrade-item">
         <div class="upgrade-header">
           <span class="upgrade-name">${u.name}</span>
-          <span class="upgrade-name">${formatUsd(u.cost)}</span>
+          <span class=\"upgrade-name\">${formatUsd(u.cost)}</span>
         </div>
         <div class="upgrade-desc">${u.desc}</div>
         <button class="${btnClass}" ${disabled} onclick="buyUpgrade('${u.id}')" style="width:100%">
@@ -533,6 +612,26 @@ function checkEligibility(bal, isBase) {
   }
   
   updateGameDisplay();
+}
+
+let lastPriceFetch = 0;
+async function fetchTokenPrice() {
+  const now = Date.now();
+  if (now - lastPriceFetch < 60000) return; // cache for 1 min
+  lastPriceFetch = now;
+
+  try {
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${TOKEN_ADDRESS}`);
+    const data = await res.json();
+    if (data.pairs && data.pairs[0]) {
+      const priceUsd = parseFloat(data.pairs[0].priceUsd);
+      const costFor1k = priceUsd * 1000;
+      const el = document.getElementById("costToPlay");
+      if (el) el.textContent = formatUsd(costFor1k);
+    }
+  } catch (e) {
+    console.error("Price fetch failed", e);
+  }
 }
 
 window.connectWallet = connectWallet;
