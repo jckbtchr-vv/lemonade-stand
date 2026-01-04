@@ -25,8 +25,8 @@
       padding: 20px;
     }
 
-    .game-container {
-      max-width: 960px;
+.game-container {
+      max-width: 1120px;
       margin: 0 auto;
       border: 1px solid #333;
       padding: 20px;
@@ -74,11 +74,36 @@
       margin-bottom: 10px;
     }
 
-    .stats {
+.stats {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
       margin-bottom: 16px;
+    }
+
+    .wide-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .chart-container {
+      border: 1px solid #333;
+      background: #000;
+      padding: 10px;
+    }
+
+    #plChart {
+      width: 100%;
+      height: 140px;
+      display: block;
+      background: #111;
+    }
+
+    .muted {
+      color: #777;
+      font-size: 0.7rem;
     }
 
     .stat {
@@ -174,6 +199,10 @@
       .grid {
         grid-template-columns: 1fr;
       }
+
+      .wide-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -189,6 +218,10 @@
       <div class="panel">
         <h2>Stand Simulation</h2>
 
+        <p class="muted" id="weatherText" style="margin-bottom: 8px;">
+          Weather: unknown · Demand: waiting for first shift.
+        </p>
+
         <div id="gateMessage" class="disclaimer">
           Connect a wallet holding at least <strong>1,000 LEMON</strong> on the Base
           network to begin running the stand.
@@ -202,6 +235,14 @@
           <div class="stat">
             <span class="stat-value" id="cups">0</span>
             <span class="stat-label">CUPS SOLD (SIM)</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="cash">$0.00</span>
+            <span class="stat-label">CASH (SIM PROFIT)</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="tier">Street Stand</span>
+            <span class="stat-label">TIER</span>
           </div>
           <div class="stat">
             <span class="stat-value" id="customers">0</span>
@@ -222,6 +263,7 @@
           >
             Run Stand
           </button>
+          <span id="cooldownMessage" class="muted"></span>
         </div>
 
         <div class="disclaimer">
@@ -276,6 +318,35 @@
         <div class="disclaimer">
           The wallet panel only <strong>reads</strong> your LEMON balance on Base.
           This interface does <strong>not</strong> send, receive, or burn tokens.
+        </div>
+      </div>
+    </div>
+
+    <div class="wide-grid">
+      <div class="panel chart-container">
+        <h2>P&L (Cumulative Profit)</h2>
+        <div class="stats" style="margin-bottom: 8px;">
+          <div class="stat">
+            <span class="stat-value" id="totalRevenue">$0.00</span>
+            <span class="stat-label">TOTAL REVENUE</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="totalCost">$0.00</span>
+            <span class="stat-label">TOTAL COST</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="totalProfit">$0.00</span>
+            <span class="stat-label">TOTAL PROFIT</span>
+          </div>
+        </div>
+        <canvas id="plChart"></canvas>
+        <p id="plChartStatus" class="muted" style="margin-top: 4px;">Run a few shifts to see the curve.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Upgrades · From Stand to Conglomerate</h2>
+        <div id="upgradesList" class="muted">
+          Run the stand to unlock upgrades.
         </div>
       </div>
     </div>
