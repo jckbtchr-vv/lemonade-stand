@@ -1,4 +1,4 @@
-// Lemonade Stand – progression simulation gated by LEMON balance on Base
+// Lemonade Stand – Supply Chain Update
 // Token address (Base): 0xd2969cc475a49e73182ae1c517add57db0f1c2ac
 
 // --- Config -----------------------------------------------------------------
@@ -37,26 +37,50 @@ const TIERS = [
 
 const SHIFT_COOLDOWN_MS = 3000;
 
+// Costs for ingredients (Cash)
+const INGREDIENT_COSTS = {
+  lemons: 0.50, // per unit
+  sugar: 0.20,
+  ice: 0.10,
+  cups: 0.10
+};
+
+// Consumption per shift (Base)
+const CONSUMPTION = {
+  lemons: 5,
+  sugar: 2,
+  ice: 5,
+  cups: 5
+};
+
 const gameState = {
   shifts: 0,
   cups: 0,
   customers: 0,
   hype: 1.0,
-  cash: 0,
+  cash: 10.00, // Start with some cash to buy ingredients
   totalRevenue: 0,
   totalCost: 0,
   tierIndex: 0,
   
+  // Inventory
+  inventory: {
+    lemons: 0,
+    sugar: 0,
+    ice: 0,
+    cups: 0
+  },
+  
   // Base variables (modified by upgrades)
   pricePerCup: 0.50,
-  costPerCup: 0.20,
+  costPerCup: 0.0, // Now calculated dynamically from ingredients
   opsMultiplier: 1.0,
   
   lastShiftAt: 0,
   plHistory: [],
   
-  // Market events (rare temporary mods)
-  activeEvent: null, // { name, type, multiplier, duration }
+  // Market events
+  activeEvent: null,
   eventTurnsRemaining: 0
 };
 
@@ -115,7 +139,7 @@ const upgrades = [
     name: "Fresh Lemons Contract",
     desc: "Direct from the farm. Better taste, lower cost.",
     cost: 150,
-    effect: (s) => { s.pricePerCup += 0.10; s.costPerCup -= 0.02; },
+    effect: (s) => { s.pricePerCup += 0.10; }, // Cost reduction handled via inventory prices later
     owned: false
   },
   {
@@ -162,7 +186,7 @@ const upgrades = [
     name: "Central Kitchen",
     desc: "Mass production efficiency.",
     cost: 2500,
-    effect: (s) => { s.costPerCup -= 0.05; },
+    effect: (s) => { /* future cost reduction hook */ },
     owned: false
   },
   {
@@ -200,7 +224,7 @@ const upgrades = [
     name: "Vertical Integration",
     desc: "Own the farms, own the trucks.",
     cost: 50000,
-    effect: (s) => { s.costPerCup -= 0.08; },
+    effect: (s) => { /* future cost hook */ },
     owned: false
   },
   {
@@ -235,7 +259,7 @@ const MARKET_EVENTS = [
 ];
 
 function rollMarketEvent() {
-  if (gameState.activeEvent || Math.random() > 0.15) return null; // 15% chance
+  if (gameState.activeEvent || Math.random() > 0.15) return null;
   const evt = MARKET_EVENTS[Math.floor(Math.random() * MARKET_EVENTS.length)];
   gameState.activeEvent = evt;
   gameState.eventTurnsRemaining = evt.turns;
@@ -260,9 +284,16 @@ function updateGameDisplay() {
   const varHype = document.getElementById("varHype");
   
   if (varPrice) varPrice.textContent = formatUsd(gameState.pricePerCup);
-  if (varCost) varCost.textContent = formatUsd(gameState.costPerCup);
+  // Cost is roughly fixed per unit + ingredients now
+  if (varCost) varCost.textContent = "Dynamic"; 
   if (varOps) varOps.textContent = `${gameState.opsMultiplier.toFixed(1)}x`;
   if (varHype) varHype.textContent = `${gameState.hype.toFixed(1)}x`;
+
+  // Inventory
+  document.getElementById("invLemons").textContent = gameState.inventory.lemons;
+  document.getElementById("invSugar").textContent = gameState.inventory.sugar;
+  document.getElementById("invIce").textContent = gameState.inventory.ice;
+  document.getElementById("invCups").textContent = gameState.inventory.cups;
 
   const revEl = document.getElementById("totalRevenue");
   const costEl = document.getElementById("totalCost");
@@ -280,6 +311,18 @@ function updateGameDisplay() {
   updateCooldownUI();
   renderUpgrades();
 }
+
+function buyIngredient(type) {
+  const cost = INGREDIENT_COSTS[type] * 5;
+  if (gameState.cash >= cost) {
+    gameState.cash -= cost;
+    gameState.inventory[type] += 5;
+    gameState.totalCost += cost; // Record expense immediately
+    updateGameDisplay();
+  }
+}
+
+window.buyIngredient = buyIngredient;
 
 function runStand() {
   if (!isEligible) return;
@@ -308,6 +351,29 @@ function runStand() {
     }
   }
 
+  // Check Inventory
+  const lemonsNeeded = CONSUMPTION.lemons;
+  const sugarNeeded = CONSUMPTION.sugar;
+  const iceNeeded = CONSUMPTION.ice;
+  const cupsNeeded = CONSUMPTION.cups;
+
+  let hasStock = true;
+  let stockPenalty = 1.0;
+
+  if (gameState.inventory.lemons < lemonsNeeded ||
+      gameState.inventory.sugar < sugarNeeded ||
+      gameState.inventory.ice < iceNeeded ||
+      gameState.inventory.cups < cupsNeeded) {
+    hasStock = false;
+    stockPenalty = 0.1; // 90% revenue penalty for selling "water"
+  } else {
+    // Consume stock
+    gameState.inventory.lemons -= lemonsNeeded;
+    gameState.inventory.sugar -= sugarNeeded;
+    gameState.inventory.ice -= iceNeeded;
+    gameState.inventory.cups -= cupsNeeded;
+  }
+
   // Calc output
   const base = 5 + Math.floor(gameState.shifts / 10);
   const hypeBonus = Math.floor(gameState.hype * 2);
@@ -321,14 +387,18 @@ function runStand() {
   );
   cups = Math.max(1, cups);
 
-  const revenue = cups * gameState.pricePerCup;
-  const cost = cups * gameState.costPerCup * eventCostMult;
-  const profit = revenue - cost;
+  const revenue = cups * gameState.pricePerCup * stockPenalty;
+  
+  // Cost is 0 per shift now because we paid for inventory upfront
+  // But we track "shift cost" for P&L visualization roughly
+  const shiftCostEstimate = hasStock ? 2.50 : 0; // rough value of 5 lemons/2 sugar/5 ice/5 cups
+
+  const profit = revenue; // Revenue is net inflow since stock was prepaid
 
   gameState.cups += cups;
   gameState.cash += profit;
   gameState.totalRevenue += revenue;
-  gameState.totalCost += cost;
+  // totalCost was incremented when buying stock
   
   gameState.hype += (cups / 1000); 
 
@@ -336,10 +406,85 @@ function runStand() {
   if (gameState.plHistory.length > 50) gameState.plHistory.shift();
 
   // Post-shift logic
-  const newEvent = rollMarketEvent(); // Try to spawn new event if slot open
+  const newEvent = rollMarketEvent(); 
+
+  generateShiftReport({
+    cups, revenue, cost: shiftCostEstimate, profit, 
+    weather: weatherState,
+    event: currentEvent,
+    spawnedEvent: newEvent,
+    hasStock
+  });
 
   updateGameDisplay();
   drawPlChart();
+}
+
+// --- Reporting Engine -------------------------------------------------------
+
+function generateShiftReport(data) {
+  const container = document.getElementById("shiftReports");
+  if (!container) return;
+
+  const isLoss = data.profit < 0;
+  
+  // Headlines based on performance
+  let headline = "SHIFT COMPLETE";
+  if (!data.hasStock) headline = "STOCKOUT FAILURE";
+  else if (data.cups > 20) headline = "HIGH VOLUME SHIFT";
+  else if (data.weather.condition === "HEATWAVE") headline = "HEATWAVE SURGE";
+
+  // Insight narrative
+  let insight = "Operations nominal.";
+  if (!data.hasStock) insight = "Running on empty. Customers disappointed. Restock immediately.";
+  else if (data.event) insight = `Market impact: ${data.event.name} (${data.event.desc})`;
+  else if (data.weather.demandMultiplier > 1.2) insight = "Weather patterns driving significant foot traffic.";
+  
+  const card = document.createElement("div");
+  card.className = "report-card";
+  
+  let eventHtml = "";
+  if (data.spawnedEvent) {
+    eventHtml = `
+      <div class="market-event">
+        ⚠ MARKET ALERT: ${data.spawnedEvent.name}<br>
+        <span style="color:#888; font-size:0.6rem;">${data.spawnedEvent.desc}</span>
+      </div>
+    `;
+  }
+
+  card.innerHTML = `
+    <div class="report-header">
+      <span>#${gameState.shifts.toString().padStart(4, '0')}</span>
+      <span style="color: ${!data.hasStock ? '#ff4444' : '#00ff00'}">${headline}</span>
+    </div>
+    <div class="report-body">
+      ${insight}
+    </div>
+    <div class="report-metrics">
+      <div class="report-metric">
+        VOL
+        <span>${data.cups}</span>
+      </div>
+      <div class="report-metric">
+        REV
+        <span>${formatUsd(data.revenue)}</span>
+      </div>
+      <div class="report-metric">
+        STOCK
+        <span style="color: ${data.hasStock ? '#fff' : '#ff4444'}">${data.hasStock ? 'OK' : 'EMPTY'}</span>
+      </div>
+    </div>
+    ${eventHtml}
+  `;
+
+  // Prepend to top
+  container.insertBefore(card, container.firstChild);
+  
+  // Limit history
+  if (container.children.length > 20) {
+    container.removeChild(container.lastChild);
+  }
 }
 
 // --- Weather ----------------------------------------------------------------
@@ -403,7 +548,7 @@ function renderUpgrades() {
       <div class="upgrade-item">
         <div class="upgrade-header">
           <span class="upgrade-name">${u.name}</span>
-          <span class="upgrade-name">${formatUsd(u.cost)}</span>
+          <span class=\"upgrade-name\">${formatUsd(u.cost)}</span>
         </div>
         <div class="upgrade-desc">${u.desc}</div>
         <button class="${btnClass}" ${disabled} onclick="buyUpgrade('${u.id}')" style="width:100%">
@@ -505,7 +650,6 @@ async function connectWallet() {
   
   document.getElementById("walletAddress").textContent = shortenAddress(userAddress);
   document.getElementById("connectWalletButton").textContent = "Disconnect";
-  // Re-enable so they can click to disconnect
   document.getElementById("connectWalletButton").disabled = false; 
 
   updateNetwork();

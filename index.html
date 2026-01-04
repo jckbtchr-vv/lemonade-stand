@@ -217,7 +217,7 @@
       flex-direction: column;
       gap: 8px;
       overflow-y: auto;
-      max-height: 400px; /* Taller now that wallet is gone */
+      max-height: 400px;
     }
 
     .upgrade-item {
@@ -248,7 +248,7 @@
     .bottom-row {
       margin-top: 16px;
       display: grid;
-      grid-template-columns: 1fr; /* Full width chart */
+      grid-template-columns: 1fr;
       gap: 16px;
     }
 
@@ -266,9 +266,112 @@
       background: #111;
     }
 
+    .report-log {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      border-top: 1px solid #333;
+      padding-top: 16px;
+    }
+
+    .report-card {
+      border: 1px solid #333;
+      background: #0a0a0a;
+      padding: 12px;
+      font-size: 0.8rem;
+    }
+
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: #ffff00;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.7rem;
+    }
+
+    .report-body {
+      color: #ccc;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .report-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      border-top: 1px solid #333;
+      padding-top: 8px;
+      font-size: 0.7rem;
+      color: #888;
+    }
+
+    .report-metric span {
+      display: block;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .market-event {
+      margin-top: 8px;
+      padding: 6px;
+      background: #111;
+      border: 1px solid #444;
+      color: #00ff00;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+    }
+
     .muted {
       color: #777;
       font-size: 0.7rem;
+    }
+
+    /* Inventory Specific */
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .inventory-card {
+      border: 1px solid #333;
+      padding: 8px;
+      background: #0a0a0a;
+      text-align: center;
+    }
+
+    .inventory-label {
+      font-size: 0.6rem;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .inventory-value {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .buy-btn {
+      width: 100%;
+      padding: 4px;
+      font-size: 0.65rem;
+      background: #222;
+      border: 1px solid #444;
+    }
+
+    .buy-btn:hover:not(:disabled) {
+      background: #333;
+      border-color: #ffff00;
     }
 
     @media (max-width: 800px) {
@@ -285,6 +388,9 @@
         grid-template-columns: 1fr;
       }
       .variables-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .inventory-grid {
         grid-template-columns: 1fr 1fr;
       }
     }
@@ -353,6 +459,30 @@
           </div>
         </div>
 
+        <!-- Inventory Grid -->
+        <div class="inventory-grid" id="inventoryGrid">
+          <div class="inventory-card">
+            <div class="inventory-label">Lemons</div>
+            <div class="inventory-value" id="invLemons">0</div>
+            <button class="buy-btn" onclick="buyIngredient('lemons')">Buy 5 ($2.50)</button>
+          </div>
+          <div class="inventory-card">
+            <div class="inventory-label">Sugar</div>
+            <div class="inventory-value" id="invSugar">0</div>
+            <button class="buy-btn" onclick="buyIngredient('sugar')">Buy 5 ($1.00)</button>
+          </div>
+          <div class="inventory-card">
+            <div class="inventory-label">Ice</div>
+            <div class="inventory-value" id="invIce">0</div>
+            <button class="buy-btn" onclick="buyIngredient('ice')">Buy 5 ($0.50)</button>
+          </div>
+          <div class="inventory-card">
+            <div class="inventory-label">Cups</div>
+            <div class="inventory-value" id="invCups">0</div>
+            <button class="buy-btn" onclick="buyIngredient('cups')">Buy 5 ($0.50)</button>
+          </div>
+        </div>
+
         <!-- Active Variables Grid -->
         <div class="variables-grid">
           <div class="variable-card">
@@ -384,6 +514,11 @@
             Run Stand
           </button>
           <span id="cooldownMessage" class="muted" style="text-align: center; margin-top: 8px;"></span>
+        </div>
+
+        <!-- Shift Intelligence Log -->
+        <div id="shiftReports" class="report-log">
+          <!-- Reports injected here -->
         </div>
       </div>
 
