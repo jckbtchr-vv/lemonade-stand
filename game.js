@@ -489,6 +489,12 @@ setInterval(updateCooldownUI, 100);
 // --- Wallet -----------------------------------------------------------------
 
 async function connectWallet() {
+  // If already connected, treat as disconnect
+  if (userAddress) {
+    disconnectWallet();
+    return;
+  }
+
   if (!window.ethereum) return alert("No wallet found");
   provider = new ethers.BrowserProvider(window.ethereum);
   const accounts = await provider.send("eth_requestAccounts", []);
@@ -498,11 +504,34 @@ async function connectWallet() {
   userAddress = await signer.getAddress();
   
   document.getElementById("walletAddress").textContent = shortenAddress(userAddress);
-  document.getElementById("connectWalletButton").textContent = "Connected";
-  document.getElementById("connectWalletButton").disabled = true;
+  document.getElementById("connectWalletButton").textContent = "Disconnect";
+  // Re-enable so they can click to disconnect
+  document.getElementById("connectWalletButton").disabled = false; 
 
   updateNetwork();
   updateBalance();
+}
+
+function disconnectWallet() {
+  provider = null;
+  signer = null;
+  userAddress = null;
+  lastChainId = null;
+  lastBalance = 0;
+  isEligible = false;
+
+  document.getElementById("walletAddress").textContent = "Not Connected";
+  document.getElementById("tokenBalance").textContent = "-";
+  document.getElementById("connectWalletButton").textContent = "Connect";
+  
+  // Reset gating
+  const gateEl = document.getElementById("gateMessage");
+  if (gateEl) {
+    gateEl.style.display = "block";
+    gateEl.innerHTML = `Connect a wallet holding at least <strong>${REQUIRED_BALANCE.toLocaleString()} ${tokenSymbol}</strong> on the Base network to play.`;
+  }
+  
+  updateGameDisplay();
 }
 
 async function updateNetwork() {
