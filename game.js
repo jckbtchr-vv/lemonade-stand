@@ -261,8 +261,31 @@ function updateGameDisplay() {
     runButton.textContent = isEligible ? "Run Stand" : "Run Stand";
   }
 
+  // Cost to play update (fetch from DexScreener)
+  fetchTokenPrice();
+
   updateCooldownUI();
   renderUpgrades();
+}
+
+let lastPriceFetch = 0;
+async function fetchTokenPrice() {
+  const now = Date.now();
+  if (now - lastPriceFetch < 60000) return; // cache for 1 min
+  lastPriceFetch = now;
+
+  try {
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${TOKEN_ADDRESS}`);
+    const data = await res.json();
+    if (data.pairs && data.pairs[0]) {
+      const priceUsd = parseFloat(data.pairs[0].priceUsd);
+      const costFor1k = priceUsd * 1000;
+      const el = document.getElementById("costToPlay");
+      if (el) el.textContent = formatUsd(costFor1k);
+    }
+  } catch (e) {
+    console.error("Price fetch failed", e);
+  }
 }
 
 function runStand() {
