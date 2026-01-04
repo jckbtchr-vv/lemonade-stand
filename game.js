@@ -338,85 +338,8 @@ function runStand() {
   // Post-shift logic
   const newEvent = rollMarketEvent(); // Try to spawn new event if slot open
 
-  generateShiftReport({
-    cups, revenue, cost, profit, 
-    weather: weatherState,
-    event: currentEvent,
-    spawnedEvent: newEvent
-  });
-
   updateGameDisplay();
   drawPlChart();
-}
-
-// --- Reporting Engine -------------------------------------------------------
-
-function generateShiftReport(data) {
-  const container = document.getElementById("shiftReports");
-  if (!container) return;
-
-  const efficiency = ((1 - (data.cost / data.revenue)) * 100).toFixed(0);
-  const isLoss = data.profit < 0;
-  
-  // Headlines based on performance
-  let headline = "SHIFT COMPLETE";
-  if (isLoss) headline = "NET LOSS RECORDED";
-  else if (data.cups > 20) headline = "HIGH VOLUME SHIFT";
-  else if (Number(efficiency) > 80) headline = "MAXIMUM EFFICIENCY";
-  else if (data.weather.condition === "HEATWAVE") headline = "HEATWAVE SURGE";
-
-  // Insight narrative
-  let insight = "Operations nominal.";
-  if (isLoss) insight = "Costs exceeded revenue. Market conditions unfavorable.";
-  else if (data.event) insight = `Market impact: ${data.event.name} (${data.event.desc})`;
-  else if (data.weather.demandMultiplier > 1.2) insight = "Weather patterns driving significant foot traffic.";
-  else if (data.weather.demandMultiplier < 0.8) insight = "Adverse weather suppressed demand.";
-  
-  const card = document.createElement("div");
-  card.className = "report-card";
-  
-  let eventHtml = "";
-  if (data.spawnedEvent) {
-    eventHtml = `
-      <div class="market-event">
-        ⚠ MARKET ALERT: ${data.spawnedEvent.name}<br>
-        <span style="color:#888; font-size:0.6rem;">${data.spawnedEvent.desc}</span>
-      </div>
-    `;
-  }
-
-  card.innerHTML = `
-    <div class="report-header">
-      <span>#${gameState.shifts.toString().padStart(4, '0')}</span>
-      <span style="color: ${isLoss ? '#ff4444' : '#00ff00'}">${headline}</span>
-    </div>
-    <div class="report-body">
-      ${insight}
-    </div>
-    <div class="report-metrics">
-      <div class="report-metric">
-        VOL
-        <span>${data.cups}</span>
-      </div>
-      <div class="report-metric">
-        NET
-        <span style="color: ${isLoss ? '#ff4444' : '#fff'}">${formatUsd(data.profit)}</span>
-      </div>
-      <div class="report-metric">
-        EFF
-        <span>${efficiency}%</span>
-      </div>
-    </div>
-    ${eventHtml}
-  `;
-
-  // Prepend to top
-  container.insertBefore(card, container.firstChild);
-  
-  // Limit history
-  if (container.children.length > 20) {
-    container.removeChild(container.lastChild);
-  }
 }
 
 // --- Weather ----------------------------------------------------------------
@@ -480,7 +403,7 @@ function renderUpgrades() {
       <div class="upgrade-item">
         <div class="upgrade-header">
           <span class="upgrade-name">${u.name}</span>
-          <span class=\"upgrade-name\">${formatUsd(u.cost)}</span>
+          <span class="upgrade-name">${formatUsd(u.cost)}</span>
         </div>
         <div class="upgrade-desc">${u.desc}</div>
         <button class="${btnClass}" ${disabled} onclick="buyUpgrade('${u.id}')" style="width:100%">
