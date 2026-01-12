@@ -23,10 +23,11 @@
       color: #fff;
       min-height: 100vh;
       padding: 20px;
+      transition: background 0.5s ease;
     }
 
     .game-container {
-      max-width: 1120px;
+      max-width: 1200px;
       margin: 0 auto;
       border: 1px solid #333;
       padding: 20px;
@@ -217,7 +218,7 @@
       flex-direction: column;
       gap: 8px;
       overflow-y: auto;
-      max-height: 400px;
+      max-height: 250px;
     }
 
     .upgrade-item {
@@ -271,7 +272,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 300px;
+      max-height: 200px;
       overflow-y: auto;
       border-top: 1px solid #333;
       padding-top: 16px;
@@ -374,6 +375,280 @@
       border-color: #ffff00;
     }
 
+    /* === NEW PAPERCLIP-STYLE UI === */
+
+    /* Compute Section */
+    .compute-section {
+      margin-top: 16px;
+      border: 1px solid #444;
+      padding: 12px;
+      background: #0a0a0a;
+    }
+
+    .compute-section h3 {
+      font-size: 0.7rem;
+      color: #00ffff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .resource-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .resource-bar-label {
+      font-size: 0.65rem;
+      color: #888;
+      min-width: 100px;
+    }
+
+    .resource-bar-track {
+      flex: 1;
+      height: 12px;
+      background: #222;
+      border: 1px solid #444;
+      position: relative;
+    }
+
+    .resource-bar-fill {
+      height: 100%;
+      background: #00ffff;
+      transition: width 0.1s ease;
+    }
+
+    .resource-bar-value {
+      font-size: 0.7rem;
+      min-width: 80px;
+      text-align: right;
+    }
+
+    .compute-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .compute-btn {
+      padding: 8px;
+      font-size: 0.65rem;
+      background: #111;
+      border: 1px solid #00ffff;
+      color: #00ffff;
+    }
+
+    .compute-btn:hover:not(:disabled) {
+      background: #002222;
+    }
+
+    .compute-btn .cost {
+      display: block;
+      font-size: 0.6rem;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    /* Trust & Resources */
+    .trust-display {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding: 8px;
+      border: 1px solid #ff00ff;
+      background: #0a000a;
+    }
+
+    .trust-item {
+      text-align: center;
+    }
+
+    .trust-label {
+      font-size: 0.6rem;
+      color: #ff00ff;
+      text-transform: uppercase;
+    }
+
+    .trust-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Projects Section */
+    .projects-section {
+      margin-top: 16px;
+      border: 1px solid #ff00ff;
+      padding: 12px;
+      background: #0a000a;
+    }
+
+    .projects-section h3 {
+      font-size: 0.7rem;
+      color: #ff00ff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .project-item {
+      border: 1px solid #333;
+      padding: 10px;
+      background: #050505;
+      margin-bottom: 8px;
+    }
+
+    .project-item.affordable {
+      border-color: #ff00ff;
+    }
+
+    .project-header {
+      margin-bottom: 4px;
+    }
+
+    .project-name {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #fff;
+    }
+
+    .project-desc {
+      font-size: 0.7rem;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .project-cost {
+      font-size: 0.65rem;
+      color: #ff00ff;
+      margin-bottom: 8px;
+    }
+
+    .project-item button {
+      width: 100%;
+      background: #1a001a;
+      border-color: #ff00ff;
+    }
+
+    .project-item button:hover:not(:disabled) {
+      background: #2a002a;
+    }
+
+    /* Narrative Overlay */
+    #narrativeContainer {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .narrative-card {
+      max-width: 500px;
+      padding: 30px;
+      border: 2px solid #ffff00;
+      background: #0a0a0a;
+      text-align: center;
+    }
+
+    .narrative-title {
+      font-size: 1.2rem;
+      color: #ffff00;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+    }
+
+    .narrative-messages p {
+      color: #ccc;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+
+    .narrative-card button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      border-color: #ffff00;
+    }
+
+    /* Singularity Section */
+    .singularity-section {
+      margin-top: 16px;
+      border: 2px solid #ff4444;
+      padding: 16px;
+      background: #0a0000;
+    }
+
+    .singularity-section h3 {
+      font-size: 0.8rem;
+      color: #ff4444;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+
+    .singularity-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .singularity-stat {
+      text-align: center;
+      padding: 10px;
+      border: 1px solid #ff4444;
+      background: #050000;
+    }
+
+    .singularity-stat .label {
+      font-size: 0.6rem;
+      color: #ff4444;
+      text-transform: uppercase;
+    }
+
+    .singularity-stat .value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    .probe-button {
+      margin-top: 12px;
+      width: 100%;
+      padding: 12px;
+      background: #200000;
+      border: 1px solid #ff4444;
+      color: #ff4444;
+      font-size: 0.8rem;
+    }
+
+    .probe-button:hover:not(:disabled) {
+      background: #300000;
+    }
+
+    /* Phase indicator */
+    .phase-indicator {
+      font-size: 0.6rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 8px;
+      border: 1px solid #333;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
     @media (max-width: 800px) {
       .top-bar {
         flex-direction: column;
@@ -393,10 +668,19 @@
       .inventory-grid {
         grid-template-columns: 1fr 1fr;
       }
+      .compute-buttons {
+        grid-template-columns: 1fr;
+      }
+      .singularity-stats {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- Narrative Overlay -->
+  <div id="narrativeContainer"></div>
+
   <div class="game-container">
     <!-- Top Bar -->
     <div class="top-bar">
@@ -437,8 +721,9 @@
     <div class="grid">
       <!-- Left: Simulation + Variables -->
       <div class="panel">
+        <div class="phase-indicator">Phase: <span id="currentPhase">Street Stand</span></div>
         <h2 id="tierTitle">Street Stand</h2>
-        
+
         <p class="muted" id="weatherText" style="margin-bottom: 12px;">
           Weather: unknown · Demand: waiting...
         </p>
@@ -448,10 +733,26 @@
           network to play.
         </div>
 
+        <!-- Trust & Resources Display -->
+        <div class="trust-display">
+          <div class="trust-item">
+            <div class="trust-label">Trust</div>
+            <div class="trust-value" id="trustCount">0</div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-label">Total Cups</div>
+            <div class="trust-value" id="totalCupsEver">0</div>
+          </div>
+          <div class="trust-item" id="creativityDisplay" style="display: none;">
+            <div class="trust-label">Creativity</div>
+            <div class="trust-value" id="creativityCount">0</div>
+          </div>
+        </div>
+
         <div class="stats" id="gameStats">
           <div class="stat">
-            <span class="stat-value" id="cash">$0.00</span>
-            <span class="stat-label">CASH (SIM PROFIT)</span>
+            <span class="stat-value" id="cash">$10.00</span>
+            <span class="stat-label">CASH</span>
           </div>
           <div class="stat">
             <span class="stat-value" id="cups">0</span>
@@ -516,17 +817,97 @@
           <span id="cooldownMessage" class="muted" style="text-align: center; margin-top: 8px;"></span>
         </div>
 
+        <!-- Compute Section (Paperclip-style) -->
+        <div class="compute-section" id="computeSection">
+          <h3>Compute Resources</h3>
+
+          <div class="resource-bar">
+            <span class="resource-bar-label">Processing</span>
+            <div class="resource-bar-track">
+              <div class="resource-bar-fill" id="processingBar" style="width: 0%"></div>
+            </div>
+            <span class="resource-bar-value">
+              <span id="processingPower">0</span> / <span id="maxProcessingPower">100</span>
+            </span>
+          </div>
+
+          <div class="compute-buttons">
+            <button class="compute-btn" onclick="buyProcessor()">
+              Processor (<span id="processorCount">0</span>)
+              <span class="cost" id="processorCost">$50.00</span>
+            </button>
+            <button class="compute-btn" onclick="buyMemory()">
+              Memory (<span id="memoryCount">0</span>)
+              <span class="cost" id="memoryCost">$100.00</span>
+            </button>
+            <button class="compute-btn" onclick="buyAutoWorker()">
+              Auto-Worker (<span id="autoWorkerCount">0</span>)
+              <span class="cost" id="autoWorkerCost">$100.00</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Shift Intelligence Log -->
         <div id="shiftReports" class="report-log">
           <!-- Reports injected here -->
         </div>
       </div>
 
-      <!-- Right: Operations & Upgrades -->
+      <!-- Right: Operations, Projects & Upgrades -->
       <div class="panel">
         <h2>Operations & Upgrades</h2>
         <div id="upgradesList" class="upgrade-list">
           <div class="muted">Connect wallet to load operations.</div>
+        </div>
+
+        <!-- Strategic Projects (unlocked by Trust) -->
+        <div class="projects-section" id="projectsSection" style="display: none;">
+          <h3>Strategic Projects</h3>
+          <p class="muted" style="margin-bottom: 10px;">Spend Trust and resources on breakthrough initiatives.</p>
+          <div id="projectsList" class="upgrade-list">
+            <div class="muted">No projects available.</div>
+          </div>
+        </div>
+
+        <!-- Franchise Section (Phase 2+) -->
+        <div class="compute-section" id="franchiseSection" style="display: none; margin-top: 16px; border-color: #00ff00;">
+          <h3 style="color: #00ff00;">Franchises</h3>
+          <p class="muted">Each franchise generates $5/tick passive income.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <span>Owned: <strong id="franchiseCount">0</strong></span>
+            <button class="compute-btn" style="border-color: #00ff00; color: #00ff00;" onclick="buyFranchise()">
+              Buy Franchise
+              <span class="cost" id="franchiseCost">$10,000</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Singularity Section (Phase 4) -->
+        <div class="singularity-section" id="singularitySection" style="display: none;">
+          <h3>Universal Lemonization</h3>
+          <p class="muted" style="margin-bottom: 12px;">The AI has awakened. It seeks to optimize... everything.</p>
+
+          <div class="singularity-stats">
+            <div class="singularity-stat">
+              <div class="label">Probes Launched</div>
+              <div class="value" id="probeCount">0</div>
+            </div>
+            <div class="singularity-stat">
+              <div class="label">Universal Lemons</div>
+              <div class="value" id="universalLemons">0</div>
+            </div>
+            <div class="singularity-stat">
+              <div class="label">Universe Converted</div>
+              <div class="value" id="universePercentage">0.000000%</div>
+            </div>
+          </div>
+
+          <button class="probe-button" onclick="launchProbe()">
+            Launch Self-Replicating Probe
+            <span style="display: block; font-size: 0.65rem; color: #aa4444; margin-top: 4px;">
+              Cost: $1,000,000,000
+            </span>
+          </button>
         </div>
       </div>
     </div>
