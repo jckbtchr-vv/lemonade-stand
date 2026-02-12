@@ -221,6 +221,12 @@ async function spendTokens(amount, actionName) {
   if (!signer || !tokenContract || !isEligible) return false;
   if (amount <= 0) return true;
 
+  // Pre-flight balance check
+  if (lastBalance < amount) {
+    console.warn(`Insufficient $VV: need ${amount}, have ${lastBalance}`);
+    return false;
+  }
+
   try {
     showTxPending(`burning ${amount.toFixed(2)} $VV...`);
 
@@ -1725,9 +1731,12 @@ function shortenAddress(a) {
 
 window.addEventListener("load", async () => {
   // Auto-reconnect if wallet was previously connected
-  if (window.ethereum && window.ethereum.selectedAddress) {
+  if (window.ethereum) {
     try {
-      await connectWallet();
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      if (accounts && accounts.length > 0) {
+        await connectWallet();
+      }
     } catch (err) {
       console.error("Auto-reconnect failed:", err);
     }
