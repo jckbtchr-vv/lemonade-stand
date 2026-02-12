@@ -310,17 +310,21 @@ async function onChain() {
 
 function onDisconnect() { disconnect(); }
 
+async function getChainId() {
+  try {
+    var hex = await provider.send("eth_chainId", []);
+    return parseInt(hex, 16);
+  } catch (e) {
+    return 0;
+  }
+}
+
 async function checkNetwork() {
   if (!provider) return;
-  try {
-    var net = await provider.getNetwork();
-    var ok = Number(net.chainId) === BASE_CHAIN_ID;
-    document.getElementById("netWarn").style.display = ok ? "none" : "inline";
-    setEligible(lastBalance, ok);
-  } catch (e) {
-    document.getElementById("netWarn").style.display = "inline";
-    setEligible(0, false);
-  }
+  var id = await getChainId();
+  var ok = id === BASE_CHAIN_ID;
+  document.getElementById("netWarn").style.display = ok ? "none" : "inline";
+  setEligible(lastBalance, ok);
 }
 
 async function refreshBalance() {
@@ -331,8 +335,8 @@ async function refreshBalance() {
     var n = Number(ethers.formatUnits(bal, tokenDecimals));
     lastBalance = n;
     document.getElementById("bal").textContent = n.toFixed(2) + " $VV";
-    var net = await provider.getNetwork();
-    setEligible(n, Number(net.chainId) === BASE_CHAIN_ID);
+    var id = await getChainId();
+    setEligible(n, id === BASE_CHAIN_ID);
   } catch (e) {
     document.getElementById("bal").textContent = "error";
   }
