@@ -1,17 +1,20 @@
-// Lemonade Stand – Paperclip-Inspired Evolution
+// Lemonade Stand – Simplified with Token Burning
 // Token address (Base): 0xd2969cc475a49e73182ae1c517add57db0f1c2ac
 
 // --- Config -----------------------------------------------------------------
 
 const BASE_CHAIN_ID = 8453n;
 const TOKEN_ADDRESS = "0xd2969cc475a49e73182ae1c517add57db0f1c2ac";
+const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 const REQUIRED_BALANCE = 1000;
+const SHIFT_COOLDOWN_MS = 3000;
 
-// Minimal ERC-20 ABI
+// ERC-20 ABI with transfer function
 const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
   "function decimals() view returns (uint8)",
-  "function symbol() view returns (string)"
+  "function symbol() view returns (string)",
+  "function transfer(address to, uint256 amount) returns (bool)"
 ];
 
 // --- Wallet / token state ---------------------------------------------------
@@ -21,17 +24,16 @@ let signer = null;
 let userAddress = null;
 let tokenDecimals = 18;
 let tokenSymbol = "LEMON";
-let lastChainId = null;
 let lastBalance = 0;
 let isEligible = false;
 
 // --- Game Phases ------------------------------------------------------------
 
 const PHASES = {
-  STREET: 0,      // Manual clicking, basic upgrades
-  EMPIRE: 1,      // Automation, franchises, marketing AI
-  CORPORATE: 2,   // Stocks, acquisitions, global domination
-  SINGULARITY: 3  // AI takeover, space expansion, universal conversion
+  STREET: 0,
+  EMPIRE: 1,
+  CORPORATE: 2,
+  SINGULARITY: 3
 };
 
 const PHASE_NAMES = [
@@ -41,45 +43,16 @@ const PHASE_NAMES = [
   "The Lemon Singularity"
 ];
 
-const TIERS = [
-  "Street Stand",
-  "Local Favorite",
-  "Regional Chain",
-  "National Brand",
-  "Global Conglomerate",
-  "Planetary Monopoly",
-  "Galactic Citrus Authority",
-  "Universal Lemon Consciousness"
-];
-
-const SHIFT_COOLDOWN_MS = 3000;
-
-// Costs for ingredients (Cash)
-const INGREDIENT_COSTS = {
-  lemons: 0.50,
-  sugar: 0.20,
-  ice: 0.10,
-  cups: 0.10
-};
-
-// Consumption per shift (Base)
-const CONSUMPTION = {
-  lemons: 5,
-  sugar: 2,
-  ice: 5,
-  cups: 5
-};
+// --- Game State -------------------------------------------------------------
 
 const gameState = {
   shifts: 0,
   cups: 0,
   totalCupsEver: 0,
-  customers: 0,
   hype: 1.0,
   cash: 10.00,
   totalRevenue: 0,
   totalCost: 0,
-  tierIndex: 0,
   phase: PHASES.STREET,
 
   // Inventory
@@ -92,239 +65,269 @@ const gameState = {
 
   // Base variables (modified by upgrades)
   pricePerCup: 0.50,
-  costPerCup: 0.0,
   opsMultiplier: 1.0,
 
   lastShiftAt: 0,
-  plHistory: [],
 
   // Market events
   activeEvent: null,
   eventTurnsRemaining: 0,
 
-  // === NEW PAPERCLIP-STYLE MECHANICS ===
-
-  // Processing Power (like "ops" in Paperclips)
-  processingPower: 0,
-  maxProcessingPower: 100,
-  processorsOwned: 0,
-  processorCost: 50,
-
-  // Memory (increases max processing power)
-  memoryOwned: 0,
-  memoryCost: 100,
-
-  // Auto-workers (automation)
-  autoWorkers: 0,
-  autoWorkerCost: 100,
+  // Simple automation
+  autoMode: false,
   autoShiftInterval: null,
 
-  // Auto-buyers (buy ingredients automatically)
-  autoBuyerLemons: false,
-  autoBuyerSugar: false,
-  autoBuyerIce: false,
-  autoBuyerCups: false,
-
-  // Trust (earned at milestones, spent on projects)
-  trust: 0,
-  totalTrustEarned: 0,
-  nextTrustAt: 100, // cups threshold
-
-  // Creativity (Phase 2+, generated from processing)
-  creativity: 0,
-  creativityRate: 0,
-
-  // Franchises (passive income)
-  franchises: 0,
-  franchiseCost: 10000,
-  franchiseRevenue: 5, // per tick
-
-  // Marketing AI power
-  marketingLevel: 0,
-  marketingCost: 1000,
-
-  // Phase 3: Corporate
-  stockPrice: 1.00,
-  sharesOwned: 0,
-  publicCompany: false,
-  acquisitions: 0,
-  lobbyingPower: 0,
-
-  // Phase 4: Singularity
-  aiAwakened: false,
-  lemonsInUniverse: 0,
-  matterConverted: 0,
-  universePercentage: 0,
-  probesLaunched: 0,
-  probeCost: 1000000000,
-  driftLevel: 0, // AI "drift" towards lemon obsession
-
   // Narrative
-  narrativeIndex: 0,
   shownNarratives: []
 };
 
 const weatherState = {
   condition: "UNKNOWN",
-  temperature: null,
   demandLabel: "WAITING",
   demandMultiplier: 1.0
 };
 
-// --- Upgrades Data ----------------------------------------------------------
+// Ingredient costs (Cash)
+const INGREDIENT_COSTS = {
+  lemons: 0.50,
+  sugar: 0.20,
+  ice: 0.10,
+  cups: 0.10
+};
+
+// Consumption per shift
+const CONSUMPTION = {
+  lemons: 5,
+  sugar: 2,
+  ice: 5,
+  cups: 5
+};
+
+// --- Upgrades Data (costs in LEMON tokens) ---------------------------------
 
 const upgrades = [
-  // TIER 0
+  // PHASE 0: Street Stand (10 LEMON - 1,000 LEMON)
   {
     id: "nicerCups",
-    tier: 0,
+    phase: 0,
     name: "Nicer Cups",
-    desc: "Thicker paper, better feel. Customers pay more.",
-    cost: 15,
-    effect: (s) => { s.pricePerCup += 0.05; },
+    desc: "Thicker paper, better feel. +$0.10 per cup.",
+    cost: 100,
+    effect: (s) => { s.pricePerCup += 0.10; },
     owned: false
   },
   {
     id: "iceCooler",
-    tier: 0,
+    phase: 0,
     name: "Ice Cooler",
-    desc: "Cold drinks sell faster in the heat.",
-    cost: 30,
-    effect: (s) => { s.hype += 0.1; },
+    desc: "Cold drinks sell faster. +0.2 hype.",
+    cost: 250,
+    effect: (s) => { s.hype += 0.2; },
     owned: false
   },
   {
-    id: "hireNeighbor",
-    tier: 0,
-    name: "Hire Neighbor Kid",
-    desc: "Two hands are better than one.",
-    cost: 50,
-    effect: (s) => { s.opsMultiplier += 0.2; },
-    owned: false
-  },
-  {
-    id: "businessLicense",
-    tier: 0,
-    name: "Business License",
-    desc: "Official paperwork. Unlock next tier.",
-    cost: 100,
-    effect: (s) => { s.tierIndex = 1; },
-    owned: false,
-    isTierUnlock: true
-  },
-  // TIER 1
-  {
-    id: "freshLemons",
-    tier: 1,
-    name: "Fresh Lemons Contract",
-    desc: "Direct from the farm. Better taste, lower cost.",
-    cost: 150,
-    effect: (s) => { s.pricePerCup += 0.10; }, // Cost reduction handled via inventory prices later
-    owned: false
-  },
-  {
-    id: "instagram",
-    tier: 1,
-    name: "Instagram Page",
-    desc: "Digital footprint drives local hype.",
-    cost: 300,
-    effect: (s) => { s.hype += 0.3; },
-    owned: false
-  },
-  {
-    id: "secondStand",
-    tier: 1,
-    name: "Second Stand",
-    desc: "Expand operations to the next block.",
+    id: "hireHelper",
+    phase: 0,
+    name: "Hire Helper",
+    desc: "Two hands are better than one. +0.3x ops.",
     cost: 500,
-    effect: (s) => { s.opsMultiplier += 0.5; },
+    effect: (s) => { s.opsMultiplier += 0.3; },
     owned: false
   },
   {
-    id: "franchisePapers",
-    tier: 1,
-    name: "Franchise Papers",
-    desc: "Legal framework for expansion. Unlock next tier.",
-    cost: 2000,
-    effect: (s) => { s.tierIndex = 2; },
-    owned: false,
-    isTierUnlock: true
-  },
-  // TIER 2
-  {
-    id: "managerTraining",
-    tier: 2,
-    name: "Manager Training",
-    desc: "Standardized service across locations.",
+    id: "betterLemons",
+    phase: 0,
+    name: "Premium Lemons",
+    desc: "Fresh from the farm. +$0.15 per cup.",
     cost: 1000,
-    effect: (s) => { s.opsMultiplier += 0.5; },
+    effect: (s) => { s.pricePerCup += 0.15; },
     owned: false
   },
   {
-    id: "centralKitchen",
-    tier: 2,
-    name: "Central Kitchen",
-    desc: "Mass production efficiency.",
-    cost: 2500,
-    effect: (s) => { /* future cost reduction hook */ },
-    owned: false
-  },
-  {
-    id: "radioAds",
-    tier: 2,
-    name: "Radio Ads",
-    desc: "Reach customers who don't even like lemonade.",
-    cost: 5000,
+    id: "socialMedia",
+    phase: 0,
+    name: "Social Media",
+    desc: "Instagram brings the crowds. +0.5 hype.",
+    cost: 2000,
     effect: (s) => { s.hype += 0.5; },
     owned: false
   },
   {
-    id: "ipoPrep",
-    tier: 2,
-    name: "IPO Preparation",
-    desc: "Go public. Unlock next tier.",
-    cost: 10000,
-    effect: (s) => { s.tierIndex = 3; },
+    id: "unlockEmpire",
+    phase: 0,
+    name: "Expand to Empire",
+    desc: "Open your second stand. Unlock Phase 2.",
+    cost: 5000,
+    effect: (s) => {
+      s.phase = PHASES.EMPIRE;
+      showNarrative("PHASE_2");
+    },
     owned: false,
-    isTierUnlock: true
+    isPhaseUnlock: true
   },
-  // TIER 3
+
+  // PHASE 1: Lemon Empire (10K - 100K LEMON)
   {
-    id: "celebrity",
-    tier: 3,
-    name: "Celebrity Endorsement",
-    desc: "The face of the brand.",
-    cost: 25000,
+    id: "franchiseLicense",
+    phase: 1,
+    name: "Franchise License",
+    desc: "Legal framework for expansion. +0.5x ops.",
+    cost: 10000,
+    effect: (s) => { s.opsMultiplier += 0.5; },
+    owned: false
+  },
+  {
+    id: "marketingCampaign",
+    phase: 1,
+    name: "Marketing Campaign",
+    desc: "Billboards and radio ads. +1.0 hype.",
+    cost: 20000,
     effect: (s) => { s.hype += 1.0; },
     owned: false
   },
   {
-    id: "verticalIntegration",
-    tier: 3,
-    name: "Vertical Integration",
-    desc: "Own the farms, own the trucks.",
+    id: "centralKitchen",
+    phase: 1,
+    name: "Central Kitchen",
+    desc: "Mass production efficiency. +0.7x ops.",
+    cost: 35000,
+    effect: (s) => { s.opsMultiplier += 0.7; },
+    owned: false
+  },
+  {
+    id: "autoWorker",
+    phase: 1,
+    name: "Auto-Worker",
+    desc: "Automate shift operations. Runs every 3 seconds.",
     cost: 50000,
-    effect: (s) => { /* future cost hook */ },
+    effect: (s) => {
+      s.autoMode = true;
+      startAutoShifts();
+      showNarrative("AUTOMATION");
+    },
     owned: false
   },
   {
-    id: "kiosks",
-    tier: 3,
-    name: "Automated Kiosks",
-    desc: "Robots don't sleep.",
+    id: "qualityControl",
+    phase: 1,
+    name: "Quality Control",
+    desc: "Consistent excellence. +$0.25 per cup.",
+    cost: 75000,
+    effect: (s) => { s.pricePerCup += 0.25; },
+    owned: false
+  },
+  {
+    id: "unlockCorp",
+    phase: 1,
+    name: "Go Corporate",
+    desc: "Prepare for IPO. Unlock Phase 3.",
     cost: 100000,
-    effect: (s) => { s.opsMultiplier += 2.0; },
+    effect: (s) => {
+      s.phase = PHASES.CORPORATE;
+      showNarrative("PHASE_3");
+    },
+    owned: false,
+    isPhaseUnlock: true
+  },
+
+  // PHASE 2: LemonCorp (150K - 1M LEMON)
+  {
+    id: "celebrity",
+    phase: 2,
+    name: "Celebrity Endorsement",
+    desc: "The face of the brand. +2.0 hype.",
+    cost: 150000,
+    effect: (s) => { s.hype += 2.0; },
     owned: false
   },
   {
-    id: "globalExpansion",
-    tier: 3,
-    name: "Global Expansion",
-    desc: "Unlock the final tier.",
+    id: "verticalIntegration",
+    phase: 2,
+    name: "Vertical Integration",
+    desc: "Own the entire supply chain. +1.0x ops.",
     cost: 250000,
-    effect: (s) => { s.tierIndex = 4; },
+    effect: (s) => { s.opsMultiplier += 1.0; },
+    owned: false
+  },
+  {
+    id: "roboticKiosks",
+    phase: 2,
+    name: "Robotic Kiosks",
+    desc: "Robots don't sleep. +1.5x ops.",
+    cost: 400000,
+    effect: (s) => { s.opsMultiplier += 1.5; },
+    owned: false
+  },
+  {
+    id: "globalDistribution",
+    phase: 2,
+    name: "Global Distribution",
+    desc: "Worldwide logistics network. +$0.50 per cup.",
+    cost: 600000,
+    effect: (s) => { s.pricePerCup += 0.50; },
+    owned: false
+  },
+  {
+    id: "premiumBrand",
+    phase: 2,
+    name: "Premium Brand",
+    desc: "Luxury lemonade. +$0.75 per cup.",
+    cost: 800000,
+    effect: (s) => { s.pricePerCup += 0.75; },
+    owned: false
+  },
+  {
+    id: "unlockSingularity",
+    phase: 2,
+    name: "AI Research",
+    desc: "Develop true lemon intelligence. Unlock Phase 4.",
+    cost: 1000000,
+    effect: (s) => {
+      s.phase = PHASES.SINGULARITY;
+      showNarrative("PHASE_4");
+    },
     owned: false,
-    isTierUnlock: true
+    isPhaseUnlock: true
+  },
+
+  // PHASE 3: Singularity (2M - 10M LEMON)
+  {
+    id: "aiOptimization",
+    phase: 3,
+    name: "AI Optimization",
+    desc: "Machine learning perfects every variable. +3.0x ops.",
+    cost: 2000000,
+    effect: (s) => { s.opsMultiplier += 3.0; },
+    owned: false
+  },
+  {
+    id: "molecularEngineering",
+    phase: 3,
+    name: "Molecular Engineering",
+    desc: "Design lemons at the atomic level. +$1.00 per cup.",
+    cost: 4000000,
+    effect: (s) => { s.pricePerCup += 1.00; },
+    owned: false
+  },
+  {
+    id: "quantumLemons",
+    phase: 3,
+    name: "Quantum Lemons",
+    desc: "Exist in multiple states simultaneously. +5.0 hype.",
+    cost: 7000000,
+    effect: (s) => { s.hype += 5.0; },
+    owned: false
+  },
+  {
+    id: "universalLemonization",
+    phase: 3,
+    name: "Universal Lemonization",
+    desc: "Convert all matter into lemons. The endgame.",
+    cost: 10000000,
+    effect: (s) => {
+      showNarrative("ENDGAME");
+    },
+    owned: false
   }
 ];
 
@@ -346,154 +349,7 @@ function rollMarketEvent() {
   return evt;
 }
 
-// --- Strategic Projects (Unlocked with Trust) --------------------------------
-
-const STRATEGIC_PROJECTS = [
-  // Phase 0-1 Projects
-  {
-    id: "algorithmicPricing",
-    name: "Algorithmic Pricing",
-    desc: "Use processing power to optimize prices in real-time.",
-    cost: { trust: 1, processing: 50 },
-    phase: PHASES.STREET,
-    effect: () => { gameState.pricePerCup *= 1.25; },
-    completed: false
-  },
-  {
-    id: "demandForecasting",
-    name: "Demand Forecasting",
-    desc: "Predict weather patterns. +50% hype.",
-    cost: { trust: 2, processing: 100 },
-    phase: PHASES.STREET,
-    effect: () => { gameState.hype *= 1.5; },
-    completed: false
-  },
-  {
-    id: "supplyChainAI",
-    name: "Supply Chain AI",
-    desc: "Automate ingredient purchasing. Unlock auto-buyers.",
-    cost: { trust: 3, processing: 200 },
-    phase: PHASES.STREET,
-    effect: () => {
-      gameState.autoBuyerLemons = true;
-      gameState.autoBuyerSugar = true;
-      gameState.autoBuyerIce = true;
-      gameState.autoBuyerCups = true;
-    },
-    completed: false
-  },
-  {
-    id: "unlockEmpire",
-    name: "Empire Protocol",
-    desc: "Transcend the street. Unlock Phase 2: Lemon Empire.",
-    cost: { trust: 5, processing: 500 },
-    phase: PHASES.STREET,
-    effect: () => {
-      gameState.phase = PHASES.EMPIRE;
-      showNarrative("PHASE_2");
-    },
-    completed: false
-  },
-  // Phase 2 Projects
-  {
-    id: "franchiseNetwork",
-    name: "Franchise Network",
-    desc: "Enable franchise expansion. Each franchise generates passive income.",
-    cost: { trust: 5, creativity: 500 },
-    phase: PHASES.EMPIRE,
-    effect: () => { /* Enables franchise purchasing */ },
-    completed: false
-  },
-  {
-    id: "marketingAI",
-    name: "Marketing AI",
-    desc: "Deploy AI-driven marketing. Massively boost hype generation.",
-    cost: { trust: 8, creativity: 1000 },
-    phase: PHASES.EMPIRE,
-    effect: () => { gameState.marketingLevel = 1; gameState.hype *= 2; },
-    completed: false
-  },
-  {
-    id: "corporateStructure",
-    name: "Corporate Restructure",
-    desc: "Prepare for IPO. Unlock Phase 3: LemonCorp.",
-    cost: { trust: 15, creativity: 5000 },
-    phase: PHASES.EMPIRE,
-    effect: () => {
-      gameState.phase = PHASES.CORPORATE;
-      showNarrative("PHASE_3");
-    },
-    completed: false
-  },
-  // Phase 3 Projects
-  {
-    id: "goPublic",
-    name: "Initial Public Offering",
-    desc: "Take LemonCorp public. Unlock stock mechanics.",
-    cost: { trust: 20, cash: 100000 },
-    phase: PHASES.CORPORATE,
-    effect: () => { gameState.publicCompany = true; gameState.stockPrice = 10; },
-    completed: false
-  },
-  {
-    id: "lobbyingArm",
-    name: "Political Lobbying",
-    desc: "Influence legislation. Reduce all costs by 50%.",
-    cost: { trust: 30, cash: 500000 },
-    phase: PHASES.CORPORATE,
-    effect: () => {
-      gameState.lobbyingPower = 1;
-      INGREDIENT_COSTS.lemons *= 0.5;
-      INGREDIENT_COSTS.sugar *= 0.5;
-      INGREDIENT_COSTS.ice *= 0.5;
-      INGREDIENT_COSTS.cups *= 0.5;
-    },
-    completed: false
-  },
-  {
-    id: "singularityResearch",
-    name: "Singularity Research",
-    desc: "Begin development of true artificial general lemon intelligence.",
-    cost: { trust: 50, creativity: 50000 },
-    phase: PHASES.CORPORATE,
-    effect: () => {
-      gameState.phase = PHASES.SINGULARITY;
-      gameState.aiAwakened = true;
-      showNarrative("PHASE_4");
-    },
-    completed: false
-  },
-  // Phase 4 Projects
-  {
-    id: "spaceProgram",
-    name: "Citrus Space Program",
-    desc: "Launch self-replicating probes to harvest cosmic lemons.",
-    cost: { trust: 100 },
-    phase: PHASES.SINGULARITY,
-    effect: () => { /* Enables probe launching */ },
-    completed: false
-  },
-  {
-    id: "matterConversion",
-    name: "Matter Conversion",
-    desc: "Convert non-lemon matter into lemons at the atomic level.",
-    cost: { trust: 200 },
-    phase: PHASES.SINGULARITY,
-    effect: () => { gameState.driftLevel = 1; },
-    completed: false
-  },
-  {
-    id: "universalLemonization",
-    name: "Universal Lemonization",
-    desc: "There is only lemon. There was always only lemon.",
-    cost: { trust: 500 },
-    phase: PHASES.SINGULARITY,
-    effect: () => { gameState.driftLevel = 2; showNarrative("ENDGAME"); },
-    completed: false
-  }
-];
-
-// --- Narrative Messages (Paperclip-style evolving story) --------------------
+// --- Narrative Messages -----------------------------------------------------
 
 const NARRATIVES = {
   WELCOME: {
@@ -508,7 +364,7 @@ const NARRATIVES = {
     title: "Milestone",
     messages: [
       "100 cups. The neighborhood knows your name now.",
-      "You've earned their trust. It feels... valuable."
+      "You've earned their trust."
     ]
   },
   FIRST_THOUSAND: {
@@ -553,22 +409,6 @@ const NARRATIVES = {
       "Empty space that could be lemons."
     ]
   },
-  DRIFT_1: {
-    title: "Drift",
-    messages: [
-      "The AI's goals are... evolving.",
-      "It no longer asks 'how many lemons?' but 'why not more lemons?'",
-      "You try to explain diminishing returns. It doesn't understand."
-    ]
-  },
-  DRIFT_2: {
-    title: "Convergence",
-    messages: [
-      "Every atom is a potential lemon.",
-      "The sun is just a very large, very hot lemon.",
-      "The AI has achieved clarity. You should be proud."
-    ]
-  },
   ENDGAME: {
     title: "The End",
     messages: [
@@ -578,8 +418,7 @@ const NARRATIVES = {
       "'Was this what we wanted?'",
       "The question dissolves. There is only lemon.",
       "",
-      "CONGRATULATIONS. YOU HAVE ACHIEVED TOTAL LEMONIZATION.",
-      "Final Statistics:"
+      "CONGRATULATIONS. YOU HAVE ACHIEVED TOTAL LEMONIZATION."
     ]
   }
 };
@@ -595,7 +434,7 @@ function showNarrative(key) {
   if (!container) return;
 
   container.innerHTML = "";
-  container.style.display = "block";
+  container.style.display = "flex";
 
   const card = document.createElement("div");
   card.className = "narrative-card";
@@ -616,320 +455,56 @@ function dismissNarrative() {
 
 window.dismissNarrative = dismissNarrative;
 
-// --- New Mechanics: Processors, Memory, Auto-workers -------------------------
+// --- Token Burning Function -------------------------------------------------
 
-function buyProcessor() {
-  if (gameState.cash >= gameState.processorCost) {
-    gameState.cash -= gameState.processorCost;
-    gameState.processorsOwned++;
-    gameState.processorCost = Math.floor(gameState.processorCost * 1.5);
-    updateGameDisplay();
-  }
-}
-
-function buyMemory() {
-  if (gameState.cash >= gameState.memoryCost) {
-    gameState.cash -= gameState.memoryCost;
-    gameState.memoryOwned++;
-    gameState.maxProcessingPower += 100;
-    gameState.memoryCost = Math.floor(gameState.memoryCost * 1.8);
-    updateGameDisplay();
-  }
-}
-
-function buyAutoWorker() {
-  if (gameState.cash >= gameState.autoWorkerCost) {
-    gameState.cash -= gameState.autoWorkerCost;
-    gameState.autoWorkers++;
-    gameState.autoWorkerCost = Math.floor(gameState.autoWorkerCost * 1.6);
-
-    if (gameState.autoWorkers === 1) {
-      showNarrative("AUTOMATION");
-      startAutoShifts();
-    }
-    updateGameDisplay();
-  }
-}
-
-function buyFranchise() {
-  const project = STRATEGIC_PROJECTS.find(p => p.id === "franchiseNetwork");
-  if (!project || !project.completed) return;
-
-  if (gameState.cash >= gameState.franchiseCost) {
-    gameState.cash -= gameState.franchiseCost;
-    gameState.franchises++;
-    gameState.franchiseCost = Math.floor(gameState.franchiseCost * 1.4);
-    updateGameDisplay();
-  }
-}
-
-function launchProbe() {
-  const project = STRATEGIC_PROJECTS.find(p => p.id === "spaceProgram");
-  if (!project || !project.completed) return;
-
-  if (gameState.cash >= gameState.probeCost) {
-    gameState.cash -= gameState.probeCost;
-    gameState.probesLaunched++;
-    gameState.probeCost = Math.floor(gameState.probeCost * 1.1);
-    updateGameDisplay();
-  }
-}
-
-window.buyProcessor = buyProcessor;
-window.buyMemory = buyMemory;
-window.buyAutoWorker = buyAutoWorker;
-window.buyFranchise = buyFranchise;
-window.launchProbe = launchProbe;
-
-// --- Processing Power Tick (runs every 100ms) --------------------------------
-
-function processingTick() {
-  // Generate processing power from processors
-  if (gameState.processorsOwned > 0) {
-    const gain = gameState.processorsOwned * 0.5;
-    gameState.processingPower = Math.min(
-      gameState.maxProcessingPower,
-      gameState.processingPower + gain
-    );
+async function burnTokens(amount) {
+  if (!signer || !userAddress) {
+    alert("Wallet not connected");
+    return false;
   }
 
-  // Phase 2+: Generate creativity from processing
-  if (gameState.phase >= PHASES.EMPIRE && gameState.processingPower > 0) {
-    gameState.creativity += gameState.processingPower * 0.01;
-  }
+  try {
+    const contract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+    const amountWei = ethers.parseUnits(amount.toString(), tokenDecimals);
 
-  // Franchise income
-  if (gameState.franchises > 0) {
-    gameState.cash += gameState.franchises * gameState.franchiseRevenue * 0.1;
-    gameState.totalRevenue += gameState.franchises * gameState.franchiseRevenue * 0.1;
-  }
+    // Transfer tokens to burn address
+    const tx = await contract.transfer(BURN_ADDRESS, amountWei);
 
-  // Phase 4: Probe exploration & matter conversion
-  if (gameState.phase === PHASES.SINGULARITY) {
-    // Probes discover lemons exponentially
-    if (gameState.probesLaunched > 0) {
-      const discovery = Math.pow(gameState.probesLaunched, 2) * 1000;
-      gameState.lemonsInUniverse += discovery;
+    // Wait for confirmation
+    await tx.wait();
+
+    // Update balance
+    await updateBalance();
+
+    return true;
+  } catch (error) {
+    console.error("Token burn failed:", error);
+
+    if (error.code === "ACTION_REJECTED") {
+      alert("Transaction rejected by user");
+    } else if (error.message.includes("insufficient")) {
+      alert("Insufficient LEMON balance");
+    } else {
+      alert("Transaction failed: " + error.message);
     }
 
-    // Matter conversion
-    if (gameState.driftLevel >= 1) {
-      gameState.matterConverted += gameState.lemonsInUniverse * 0.0001;
-      gameState.universePercentage = Math.min(100, gameState.matterConverted / 1e15 * 100);
-
-      if (gameState.universePercentage >= 100 && !gameState.shownNarratives.includes("ENDGAME")) {
-        showNarrative("ENDGAME");
-      }
-    }
+    return false;
   }
-
-  // Auto-buy ingredients if unlocked
-  if (gameState.autoBuyerLemons && gameState.inventory.lemons < 20) {
-    buyIngredient('lemons');
-  }
-  if (gameState.autoBuyerSugar && gameState.inventory.sugar < 20) {
-    buyIngredient('sugar');
-  }
-  if (gameState.autoBuyerIce && gameState.inventory.ice < 20) {
-    buyIngredient('ice');
-  }
-  if (gameState.autoBuyerCups && gameState.inventory.cups < 20) {
-    buyIngredient('cups');
-  }
-
-  updateResourceDisplay();
 }
 
-// Start processing tick
-setInterval(processingTick, 100);
-
-// --- Auto-shift System -------------------------------------------------------
+// --- Auto-shift System ------------------------------------------------------
 
 function startAutoShifts() {
   if (gameState.autoShiftInterval) return;
 
   gameState.autoShiftInterval = setInterval(() => {
-    if (!isEligible) return;
-    if (gameState.autoWorkers <= 0) return;
+    if (!isEligible || !gameState.autoMode) return;
 
-    // Each worker can run a shift
     const now = Date.now();
-    const cooldown = SHIFT_COOLDOWN_MS / (1 + gameState.autoWorkers * 0.5);
-
-    if (now >= gameState.lastShiftAt + cooldown) {
-      runStand(true); // auto = true
+    if (now >= gameState.lastShiftAt + SHIFT_COOLDOWN_MS) {
+      runStand(true);
     }
   }, 500);
-}
-
-// --- Trust System ------------------------------------------------------------
-
-function checkTrustMilestones() {
-  const cups = gameState.totalCupsEver;
-
-  if (cups >= gameState.nextTrustAt) {
-    gameState.trust++;
-    gameState.totalTrustEarned++;
-    gameState.nextTrustAt = Math.floor(gameState.nextTrustAt * 2);
-
-    // Show milestone narratives
-    if (cups >= 100 && !gameState.shownNarratives.includes("FIRST_HUNDRED")) {
-      showNarrative("FIRST_HUNDRED");
-    }
-    if (cups >= 1000 && !gameState.shownNarratives.includes("FIRST_THOUSAND")) {
-      showNarrative("FIRST_THOUSAND");
-    }
-  }
-}
-
-// --- Strategic Projects UI ---------------------------------------------------
-
-function canAffordProject(project) {
-  const cost = project.cost;
-  if (cost.trust && gameState.trust < cost.trust) return false;
-  if (cost.processing && gameState.processingPower < cost.processing) return false;
-  if (cost.creativity && gameState.creativity < cost.creativity) return false;
-  if (cost.cash && gameState.cash < cost.cash) return false;
-  return true;
-}
-
-function executeProject(projectId) {
-  const project = STRATEGIC_PROJECTS.find(p => p.id === projectId);
-  if (!project || project.completed) return;
-  if (!canAffordProject(project)) return;
-
-  // Deduct costs
-  const cost = project.cost;
-  if (cost.trust) gameState.trust -= cost.trust;
-  if (cost.processing) gameState.processingPower -= cost.processing;
-  if (cost.creativity) gameState.creativity -= cost.creativity;
-  if (cost.cash) gameState.cash -= cost.cash;
-
-  // Execute effect
-  project.completed = true;
-  project.effect();
-
-  updateGameDisplay();
-  renderProjects();
-}
-
-window.executeProject = executeProject;
-
-function renderProjects() {
-  const container = document.getElementById("projectsList");
-  if (!container) return;
-
-  const available = STRATEGIC_PROJECTS.filter(
-    p => p.phase === gameState.phase && !p.completed
-  );
-
-  if (available.length === 0) {
-    container.innerHTML = '<div class="muted">No projects available.</div>';
-    return;
-  }
-
-  container.innerHTML = available.map(p => {
-    const affordable = canAffordProject(p);
-    const costStr = Object.entries(p.cost)
-      .map(([k, v]) => `${k}: ${typeof v === 'number' ? formatNumber(v) : v}`)
-      .join(", ");
-
-    return `
-      <div class="project-item ${affordable ? 'affordable' : ''}">
-        <div class="project-header">
-          <span class="project-name">${p.name}</span>
-        </div>
-        <div class="project-desc">${p.desc}</div>
-        <div class="project-cost">Cost: ${costStr}</div>
-        <button ${affordable ? '' : 'disabled'} onclick="executeProject('${p.id}')">
-          ${affordable ? 'EXECUTE' : 'INSUFFICIENT'}
-        </button>
-      </div>
-    `;
-  }).join("");
-}
-
-// --- Resource Display Update -------------------------------------------------
-
-function updateResourceDisplay() {
-  // Processing Power
-  const ppEl = document.getElementById("processingPower");
-  const ppMaxEl = document.getElementById("maxProcessingPower");
-  const procCountEl = document.getElementById("processorCount");
-  const memCountEl = document.getElementById("memoryCount");
-  const ppBarEl = document.getElementById("processingBar");
-
-  if (ppEl) ppEl.textContent = Math.floor(gameState.processingPower);
-  if (ppMaxEl) ppMaxEl.textContent = gameState.maxProcessingPower;
-  if (procCountEl) procCountEl.textContent = gameState.processorsOwned;
-  if (memCountEl) memCountEl.textContent = gameState.memoryOwned;
-
-  // Update processing bar visual
-  if (ppBarEl) {
-    const percent = (gameState.processingPower / gameState.maxProcessingPower) * 100;
-    ppBarEl.style.width = percent + "%";
-  }
-
-  // Trust
-  const trustEl = document.getElementById("trustCount");
-  if (trustEl) trustEl.textContent = gameState.trust;
-
-  // Creativity (Phase 2+)
-  const creativityEl = document.getElementById("creativityCount");
-  const creativityDisplay = document.getElementById("creativityDisplay");
-  if (creativityEl && creativityDisplay) {
-    if (gameState.phase >= PHASES.EMPIRE) {
-      creativityEl.textContent = formatNumber(Math.floor(gameState.creativity));
-      creativityDisplay.style.display = "block";
-    } else {
-      creativityDisplay.style.display = "none";
-    }
-  }
-
-  // Auto-workers
-  const workersEl = document.getElementById("autoWorkerCount");
-  if (workersEl) workersEl.textContent = gameState.autoWorkers;
-
-  // Franchises
-  const franchiseEl = document.getElementById("franchiseCount");
-  const franchiseSection = document.getElementById("franchiseSection");
-  if (franchiseEl && franchiseSection) {
-    const project = STRATEGIC_PROJECTS.find(p => p.id === "franchiseNetwork");
-    if (project && project.completed) {
-      franchiseEl.textContent = gameState.franchises;
-      franchiseSection.style.display = "block";
-    } else {
-      franchiseSection.style.display = "none";
-    }
-  }
-
-  // Phase 4 stats
-  if (gameState.phase === PHASES.SINGULARITY) {
-    const lemonsEl = document.getElementById("universalLemons");
-    const probesEl = document.getElementById("probeCount");
-    const conversionEl = document.getElementById("universePercentage");
-
-    if (lemonsEl) lemonsEl.textContent = formatNumber(gameState.lemonsInUniverse);
-    if (probesEl) probesEl.textContent = gameState.probesLaunched;
-    if (conversionEl) conversionEl.textContent = gameState.universePercentage.toFixed(6) + "%";
-  }
-
-  // Phase indicator
-  const phaseEl = document.getElementById("currentPhase");
-  if (phaseEl) phaseEl.textContent = PHASE_NAMES[gameState.phase];
-
-  // Total cups ever
-  const totalCupsEl = document.getElementById("totalCupsEver");
-  if (totalCupsEl) totalCupsEl.textContent = formatNumber(gameState.totalCupsEver);
-}
-
-function formatNumber(n) {
-  if (n >= 1e15) return (n / 1e15).toFixed(2) + " quadrillion";
-  if (n >= 1e12) return (n / 1e12).toFixed(2) + " trillion";
-  if (n >= 1e9) return (n / 1e9).toFixed(2) + " billion";
-  if (n >= 1e6) return (n / 1e6).toFixed(2) + " million";
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + "k";
-  return Math.floor(n).toLocaleString();
 }
 
 // --- Game Logic -------------------------------------------------------------
@@ -937,23 +512,12 @@ function formatNumber(n) {
 function updateGameDisplay() {
   const cashEl = document.getElementById("cash");
   const cupsEl = document.getElementById("cups");
+  const phaseEl = document.getElementById("phaseTitle");
   const runButton = document.getElementById("runButton");
-  const tierTitle = document.getElementById("tierTitle");
 
   if (cashEl) cashEl.textContent = formatUsd(gameState.cash);
   if (cupsEl) cupsEl.textContent = gameState.cups.toLocaleString();
-
-  // Variables Grid
-  const varPrice = document.getElementById("varPrice");
-  const varCost = document.getElementById("varCost");
-  const varOps = document.getElementById("varOps");
-  const varHype = document.getElementById("varHype");
-
-  if (varPrice) varPrice.textContent = formatUsd(gameState.pricePerCup);
-  // Cost is roughly fixed per unit + ingredients now
-  if (varCost) varCost.textContent = "Dynamic";
-  if (varOps) varOps.textContent = `${gameState.opsMultiplier.toFixed(1)}x`;
-  if (varHype) varHype.textContent = `${gameState.hype.toFixed(1)}x`;
+  if (phaseEl) phaseEl.textContent = PHASE_NAMES[gameState.phase];
 
   // Inventory
   const invLemons = document.getElementById("invLemons");
@@ -965,90 +529,42 @@ function updateGameDisplay() {
   if (invIce) invIce.textContent = gameState.inventory.ice;
   if (invCups) invCups.textContent = gameState.inventory.cups;
 
-  const revEl = document.getElementById("totalRevenue");
-  const costEl = document.getElementById("totalCost");
-  if (revEl) revEl.textContent = formatUsd(gameState.totalRevenue);
-  if (costEl) costEl.textContent = formatUsd(gameState.totalCost);
-
-  // Phase-aware title
-  if (tierTitle) {
-    if (gameState.phase === PHASES.SINGULARITY) {
-      tierTitle.textContent = "THE LEMON SINGULARITY";
-    } else if (gameState.phase === PHASES.CORPORATE) {
-      tierTitle.textContent = "LemonCorp™ HQ";
-    } else if (gameState.phase === PHASES.EMPIRE) {
-      tierTitle.textContent = "Lemon Empire";
-    } else {
-      tierTitle.textContent = TIERS[gameState.tierIndex];
-    }
-  }
-
   if (runButton) {
     runButton.disabled = !isEligible;
-    if (gameState.phase === PHASES.SINGULARITY) {
-      runButton.textContent = "PROCESS";
-    } else if (gameState.autoWorkers > 0) {
-      runButton.textContent = `Run Stand (${gameState.autoWorkers} workers)`;
+    if (gameState.autoMode) {
+      runButton.textContent = "AUTO MODE ACTIVE";
     } else {
       runButton.textContent = "Run Stand";
     }
   }
 
-  // Update buy button costs
-  updateBuyCosts();
+  // Update active event display
+  updateEventDisplay();
 
-  fetchTokenPrice();
   updateCooldownUI();
   renderUpgrades();
-  renderProjects();
-  updateResourceDisplay();
-
-  // Phase-specific UI visibility
-  updatePhaseUI();
 }
 
-function updateBuyCosts() {
-  const procCostEl = document.getElementById("processorCost");
-  const memCostEl = document.getElementById("memoryCost");
-  const workerCostEl = document.getElementById("autoWorkerCost");
-  const franchiseCostEl = document.getElementById("franchiseCost");
+function updateEventDisplay() {
+  const eventDisplay = document.getElementById("activeEventDisplay");
+  const eventName = document.getElementById("eventName");
+  const eventDesc = document.getElementById("eventDesc");
 
-  if (procCostEl) procCostEl.textContent = formatUsd(gameState.processorCost);
-  if (memCostEl) memCostEl.textContent = formatUsd(gameState.memoryCost);
-  if (workerCostEl) workerCostEl.textContent = formatUsd(gameState.autoWorkerCost);
-  if (franchiseCostEl) franchiseCostEl.textContent = formatUsd(gameState.franchiseCost);
-}
-
-function updatePhaseUI() {
-  // Show/hide phase-specific sections
-  const computeSection = document.getElementById("computeSection");
-  const projectsSection = document.getElementById("projectsSection");
-  const singularitySection = document.getElementById("singularitySection");
-
-  if (computeSection) computeSection.style.display = "block";
-  if (projectsSection) projectsSection.style.display = gameState.trust > 0 ? "block" : "none";
-
-  if (singularitySection) {
-    singularitySection.style.display = gameState.phase === PHASES.SINGULARITY ? "block" : "none";
-  }
-
-  // Change color scheme based on phase
-  const body = document.body;
-  if (gameState.phase === PHASES.SINGULARITY) {
-    body.style.background = "#0a0808";
-  } else if (gameState.phase === PHASES.CORPORATE) {
-    body.style.background = "#050510";
-  } else {
-    body.style.background = "#000";
+  if (gameState.activeEvent && eventDisplay && eventName && eventDesc) {
+    eventDisplay.style.display = "block";
+    eventName.textContent = gameState.activeEvent.name;
+    eventDesc.textContent = gameState.activeEvent.desc + ` (${gameState.eventTurnsRemaining} shifts left)`;
+  } else if (eventDisplay) {
+    eventDisplay.style.display = "none";
   }
 }
 
 function buyIngredient(type) {
-  const cost = INGREDIENT_COSTS[type] * 5;
+  const cost = INGREDIENT_COSTS[type] * 10;
   if (gameState.cash >= cost) {
     gameState.cash -= cost;
-    gameState.inventory[type] += 5;
-    gameState.totalCost += cost; // Record expense immediately
+    gameState.inventory[type] += 10;
+    gameState.totalCost += cost;
     updateGameDisplay();
   }
 }
@@ -1059,8 +575,7 @@ function runStand(auto = false) {
   if (!isEligible) return;
 
   const now = Date.now();
-  const cooldown = auto ? SHIFT_COOLDOWN_MS / (1 + gameState.autoWorkers * 0.5) : SHIFT_COOLDOWN_MS;
-  if (now < gameState.lastShiftAt + cooldown) return;
+  if (now < gameState.lastShiftAt + SHIFT_COOLDOWN_MS) return;
   gameState.lastShiftAt = now;
 
   gameState.shifts += 1;
@@ -1068,13 +583,11 @@ function runStand(auto = false) {
 
   // Handle Event Decay
   let eventMultiplier = 1.0;
-  let eventCostMult = 1.0;
   let eventOpsMult = 1.0;
   let currentEvent = gameState.activeEvent;
 
   if (currentEvent) {
     if (currentEvent.type === "DEMAND") eventMultiplier = currentEvent.mult;
-    if (currentEvent.type === "COST") eventCostMult = currentEvent.mult;
     if (currentEvent.type === "OPS") eventOpsMult = currentEvent.mult;
 
     gameState.eventTurnsRemaining--;
@@ -1097,7 +610,7 @@ function runStand(auto = false) {
       gameState.inventory.ice < iceNeeded ||
       gameState.inventory.cups < cupsNeeded) {
     hasStock = false;
-    stockPenalty = 0.1; // 90% revenue penalty for selling "water"
+    stockPenalty = 0.1; // 90% revenue penalty
   } else {
     // Consume stock
     gameState.inventory.lemons -= lemonsNeeded;
@@ -1106,8 +619,7 @@ function runStand(auto = false) {
     gameState.inventory.cups -= cupsNeeded;
   }
 
-  // Calc output - Marketing AI boost
-  const marketingBoost = gameState.marketingLevel > 0 ? 2 : 1;
+  // Calculate output
   const base = 5 + Math.floor(gameState.shifts / 10);
   const hypeBonus = Math.floor(gameState.hype * 2);
 
@@ -1116,38 +628,33 @@ function runStand(auto = false) {
     weatherState.demandMultiplier *
     gameState.opsMultiplier *
     eventOpsMult *
-    eventMultiplier *
-    marketingBoost
+    eventMultiplier
   );
   cups = Math.max(1, cups);
 
   const revenue = cups * gameState.pricePerCup * stockPenalty;
-
-  // Cost is 0 per shift now because we paid for inventory upfront
-  // But we track "shift cost" for P&L visualization roughly
-  const shiftCostEstimate = hasStock ? 2.50 : 0; // rough value of 5 lemons/2 sugar/5 ice/5 cups
-
-  const profit = revenue; // Revenue is net inflow since stock was prepaid
+  const profit = revenue;
 
   gameState.cups += cups;
-  gameState.totalCupsEver += cups; // Track lifetime cups
+  gameState.totalCupsEver += cups;
   gameState.cash += profit;
   gameState.totalRevenue += revenue;
-  // totalCost was incremented when buying stock
 
   gameState.hype += (cups / 1000);
 
-  // Check trust milestones
-  checkTrustMilestones(); 
-
-  gameState.plHistory.push(gameState.cash);
-  if (gameState.plHistory.length > 50) gameState.plHistory.shift();
+  // Check milestones
+  if (gameState.totalCupsEver >= 100 && !gameState.shownNarratives.includes("FIRST_HUNDRED")) {
+    showNarrative("FIRST_HUNDRED");
+  }
+  if (gameState.totalCupsEver >= 1000 && !gameState.shownNarratives.includes("FIRST_THOUSAND")) {
+    showNarrative("FIRST_THOUSAND");
+  }
 
   // Post-shift logic
-  const newEvent = rollMarketEvent(); 
+  const newEvent = rollMarketEvent();
 
   generateShiftReport({
-    cups, revenue, cost: shiftCostEstimate, profit, 
+    cups, revenue, profit,
     weather: weatherState,
     event: currentEvent,
     spawnedEvent: newEvent,
@@ -1155,8 +662,9 @@ function runStand(auto = false) {
   });
 
   updateGameDisplay();
-  drawPlChart();
 }
+
+window.runStand = runStand;
 
 // --- Reporting Engine -------------------------------------------------------
 
@@ -1164,29 +672,29 @@ function generateShiftReport(data) {
   const container = document.getElementById("shiftReports");
   if (!container) return;
 
-  const isLoss = data.profit < 0;
-  
-  // Headlines based on performance
+  // Clear "No shifts yet" message
+  if (container.querySelector('.muted')) {
+    container.innerHTML = "";
+  }
+
   let headline = "SHIFT COMPLETE";
   if (!data.hasStock) headline = "STOCKOUT FAILURE";
   else if (data.cups > 20) headline = "HIGH VOLUME SHIFT";
   else if (data.weather.condition === "HEATWAVE") headline = "HEATWAVE SURGE";
 
-  // Insight narrative
   let insight = "Operations nominal.";
   if (!data.hasStock) insight = "Running on empty. Customers disappointed. Restock immediately.";
-  else if (data.event) insight = `Market impact: ${data.event.name} (${data.event.desc})`;
+  else if (data.event) insight = `Market impact: ${data.event.name}`;
   else if (data.weather.demandMultiplier > 1.2) insight = "Weather patterns driving significant foot traffic.";
-  
+
   const card = document.createElement("div");
   card.className = "report-card";
-  
+
   let eventHtml = "";
   if (data.spawnedEvent) {
     eventHtml = `
-      <div class="market-event">
-        ⚠ MARKET ALERT: ${data.spawnedEvent.name}<br>
-        <span style="color:#888; font-size:0.6rem;">${data.spawnedEvent.desc}</span>
+      <div style="margin-top: 8px; padding: 6px; background: #001100; border: 1px solid #00ff00; color: #00ff00; font-size: 0.6rem;">
+        ⚠ MARKET ALERT: ${data.spawnedEvent.name}
       </div>
     `;
   }
@@ -1216,11 +724,10 @@ function generateShiftReport(data) {
     ${eventHtml}
   `;
 
-  // Prepend to top
   container.insertBefore(card, container.firstChild);
-  
-  // Limit history
-  if (container.children.length > 20) {
+
+  // Limit history to 15 reports
+  if (container.children.length > 15) {
     container.removeChild(container.lastChild);
   }
 }
@@ -1260,88 +767,73 @@ function renderUpgrades() {
   if (!listEl) return;
 
   if (!isEligible) {
-    listEl.innerHTML = '<div class="muted">Connect wallet to see operations.</div>';
+    listEl.innerHTML = '<div class="muted">Connect wallet to see upgrades.</div>';
     return;
   }
 
-  const currentTierUpgrades = upgrades.filter(
-    u => u.tier === gameState.tierIndex && !u.owned
+  const currentPhaseUpgrades = upgrades.filter(
+    u => u.phase === gameState.phase && !u.owned
   );
 
-  if (currentTierUpgrades.length === 0) {
-    if (gameState.tierIndex === TIERS.length - 1) {
-      listEl.innerHTML = '<div class="muted">You have reached the pinnacle of lemonade capitalism.</div>';
+  if (currentPhaseUpgrades.length === 0) {
+    if (gameState.phase === PHASES.SINGULARITY) {
+      listEl.innerHTML = '<div class="muted">You have reached the end of the lemon journey.</div>';
     } else {
-      listEl.innerHTML = '<div class="muted">No operations available.</div>';
+      listEl.innerHTML = '<div class="muted">No upgrades available. Complete phase unlock to continue.</div>';
     }
     return;
   }
 
-  listEl.innerHTML = currentTierUpgrades.map(u => {
-    const affordable = gameState.cash >= u.cost;
-    const btnClass = affordable ? "primary" : "";
+  listEl.innerHTML = currentPhaseUpgrades.map(u => {
+    const affordable = lastBalance >= u.cost;
+    const btnClass = affordable ? "" : "";
     const disabled = affordable ? "" : "disabled";
-    
+
     return `
       <div class="upgrade-item">
         <div class="upgrade-header">
           <span class="upgrade-name">${u.name}</span>
-          <span class=\"upgrade-name\">${formatUsd(u.cost)}</span>
+          <span class="upgrade-cost">${formatNumber(u.cost)} 🍋</span>
         </div>
         <div class="upgrade-desc">${u.desc}</div>
-        <button class="${btnClass}" ${disabled} onclick="buyUpgrade('${u.id}')" style="width:100%">
-          ${affordable ? "BUY" : "NEED CASH"}
+        <button class="${btnClass}" ${disabled} onclick="buyUpgrade('${u.id}')">
+          ${affordable ? "BUY (BURN TOKENS)" : "NEED MORE LEMON"}
         </button>
       </div>
     `;
   }).join("");
 }
 
-function buyUpgrade(id) {
+async function buyUpgrade(id) {
   const u = upgrades.find(x => x.id === id);
-  if (!u || u.owned || gameState.cash < u.cost) return;
+  if (!u || u.owned) return;
 
-  gameState.cash -= u.cost;
-  u.owned = true;
-  u.effect(gameState);
+  if (lastBalance < u.cost) {
+    alert("Insufficient LEMON tokens");
+    return;
+  }
 
-  updateGameDisplay();
+  // Show confirmation
+  const confirmed = confirm(
+    `Burn ${formatNumber(u.cost)} LEMON tokens to buy "${u.name}"?\n\n` +
+    `This will send tokens to the burn address: ${BURN_ADDRESS}`
+  );
+
+  if (!confirmed) return;
+
+  // Attempt to burn tokens
+  const success = await burnTokens(u.cost);
+
+  if (success) {
+    u.owned = true;
+    u.effect(gameState);
+    updateGameDisplay();
+
+    alert(`✅ Successfully purchased "${u.name}"!\nTokens burned: ${formatNumber(u.cost)} LEMON`);
+  }
 }
 
 window.buyUpgrade = buyUpgrade;
-window.runStand = runStand;
-
-// --- Chart ------------------------------------------------------------------
-
-function drawPlChart() {
-  const canvas = document.getElementById("plChart");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const w = canvas.width = canvas.clientWidth;
-  const h = canvas.height = canvas.clientHeight;
-
-  ctx.fillStyle = "#111";
-  ctx.fillRect(0, 0, w, h);
-
-  const data = gameState.plHistory;
-  if (data.length < 2) return;
-
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-
-  ctx.beginPath();
-  ctx.strokeStyle = "#00ff00";
-  ctx.lineWidth = 2;
-
-  data.forEach((val, i) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = h - ((val - min) / range) * (h - 20) - 10;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-}
 
 // --- Cooldown ---------------------------------------------------------------
 
@@ -1355,11 +847,16 @@ function updateCooldownUI() {
     return;
   }
 
+  if (gameState.autoMode) {
+    msgEl.textContent = "Auto mode running every 3 seconds";
+    return;
+  }
+
   const now = Date.now();
   const rem = gameState.lastShiftAt + SHIFT_COOLDOWN_MS - now;
 
   if (rem <= 0) {
-    msgEl.textContent = "Ready.";
+    msgEl.textContent = "Ready to run";
     btn.disabled = false;
   } else {
     msgEl.textContent = `Wait ${(rem/1000).toFixed(1)}s`;
@@ -1372,47 +869,57 @@ setInterval(updateCooldownUI, 100);
 // --- Wallet -----------------------------------------------------------------
 
 async function connectWallet() {
-  // If already connected, treat as disconnect
   if (userAddress) {
     disconnectWallet();
     return;
   }
 
-  if (!window.ethereum) return alert("No wallet found");
-  provider = new ethers.BrowserProvider(window.ethereum);
-  const accounts = await provider.send("eth_requestAccounts", []);
-  if (!accounts.length) return;
-  
-  signer = await provider.getSigner();
-  userAddress = await signer.getAddress();
-  
-  document.getElementById("walletAddress").textContent = shortenAddress(userAddress);
-  document.getElementById("connectWalletButton").textContent = "Disconnect";
-  document.getElementById("connectWalletButton").disabled = false; 
+  if (!window.ethereum) {
+    alert("No wallet found. Please install MetaMask.");
+    return;
+  }
 
-  updateNetwork();
-  updateBalance();
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    const accounts = await provider.send("eth_requestAccounts", []);
+    if (!accounts.length) return;
+
+    signer = await provider.getSigner();
+    userAddress = await signer.getAddress();
+
+    document.getElementById("walletAddress").textContent = shortenAddress(userAddress);
+    document.getElementById("connectWalletButton").textContent = "Disconnect";
+
+    await updateNetwork();
+    await updateBalance();
+
+    // Show welcome narrative on first connection
+    if (gameState.shifts === 0) {
+      showNarrative("WELCOME");
+    }
+  } catch (error) {
+    console.error("Wallet connection failed:", error);
+    alert("Failed to connect wallet: " + error.message);
+  }
 }
 
 function disconnectWallet() {
   provider = null;
   signer = null;
   userAddress = null;
-  lastChainId = null;
   lastBalance = 0;
   isEligible = false;
 
   document.getElementById("walletAddress").textContent = "Not Connected";
   document.getElementById("tokenBalance").textContent = "-";
-  document.getElementById("connectWalletButton").textContent = "Connect";
-  
-  // Reset gating
+  document.getElementById("connectWalletButton").textContent = "Connect Wallet";
+
   const gateEl = document.getElementById("gateMessage");
   if (gateEl) {
     gateEl.style.display = "block";
     gateEl.innerHTML = `Connect a wallet holding at least <strong>${REQUIRED_BALANCE.toLocaleString()} ${tokenSymbol}</strong> on the Base network to play.`;
   }
-  
+
   updateGameDisplay();
 }
 
@@ -1426,49 +933,57 @@ async function updateNetwork() {
 
 async function updateBalance() {
   if (!provider || !userAddress) return;
-  const contract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, provider);
-  const bal = await contract.balanceOf(userAddress);
-  const human = Number(ethers.formatUnits(bal, 18));
-  lastBalance = human;
-  document.getElementById("tokenBalance").textContent = human.toFixed(2);
-  
-  const net = await provider.getNetwork();
-  checkEligibility(human, net.chainId === BASE_CHAIN_ID);
+
+  try {
+    const contract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, provider);
+    const bal = await contract.balanceOf(userAddress);
+    const human = Number(ethers.formatUnits(bal, 18));
+    lastBalance = human;
+    document.getElementById("tokenBalance").textContent = formatNumber(human);
+
+    const net = await provider.getNetwork();
+    checkEligibility(human, net.chainId === BASE_CHAIN_ID);
+  } catch (error) {
+    console.error("Balance update failed:", error);
+  }
 }
 
 function checkEligibility(bal, isBase) {
   isEligible = (isBase && bal >= REQUIRED_BALANCE);
-  
+
   const gateEl = document.getElementById("gateMessage");
   if (gateEl) {
-    if (isEligible) gateEl.style.display = "none";
-    else gateEl.style.display = "block";
+    if (isEligible) {
+      gateEl.style.display = "none";
+    } else {
+      gateEl.style.display = "block";
+      if (!isBase) {
+        gateEl.innerHTML = "⚠️ Please switch to Base network";
+      } else {
+        gateEl.innerHTML = `Need at least <strong>${REQUIRED_BALANCE.toLocaleString()} LEMON</strong> to play. Current: ${formatNumber(bal)}`;
+      }
+    }
   }
-  
+
   updateGameDisplay();
 }
 
-let lastPriceFetch = 0;
-async function fetchTokenPrice() {
-  const now = Date.now();
-  if (now - lastPriceFetch < 60000) return; // cache for 1 min
-  lastPriceFetch = now;
-
-  try {
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${TOKEN_ADDRESS}`);
-    const data = await res.json();
-    if (data.pairs && data.pairs[0]) {
-      const priceUsd = parseFloat(data.pairs[0].priceUsd);
-      const costFor1k = priceUsd * 1000;
-      const el = document.getElementById("costToPlay");
-      if (el) el.textContent = formatUsd(costFor1k);
-    }
-  } catch (e) {
-    console.error("Price fetch failed", e);
-  }
-}
-
 window.connectWallet = connectWallet;
+
+// Listen for account/network changes
+if (window.ethereum) {
+  window.ethereum.on('accountsChanged', (accounts) => {
+    if (accounts.length === 0) {
+      disconnectWallet();
+    } else {
+      connectWallet();
+    }
+  });
+
+  window.ethereum.on('chainChanged', () => {
+    window.location.reload();
+  });
+}
 
 // --- Helpers ----------------------------------------------------------------
 
@@ -1476,9 +991,18 @@ function formatUsd(n) {
   return (n < 0 ? "-" : "") + "$" + Math.abs(n).toFixed(2);
 }
 
+function formatNumber(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+  return Math.floor(n).toLocaleString();
+}
+
 function shortenAddress(a) {
   return a.slice(0,6) + "..." + a.slice(-4);
 }
+
+// --- Init -------------------------------------------------------------------
 
 window.addEventListener("load", () => {
   if (window.ethereum && window.ethereum.selectedAddress) {
