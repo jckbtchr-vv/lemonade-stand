@@ -47,7 +47,26 @@
     }
 
     /* Top-left */
-    .top-left { top: 16px; left: 16px; }
+    .top-left {
+      top: 16px; left: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .top-left .divider { margin: 2px 0; }
+
+    .stat-row-left {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .stat-row-left .stat-label { color: #888; }
+    .stat-row-left .stat-value { color: #fff; font-weight: 500; }
+
     .coords { color: #888; }
 
     /* Top-center */
@@ -162,14 +181,10 @@
 
     /* Status toast */
     #status {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 20;
       color: #888;
       opacity: 0;
       transition: opacity 0.3s;
+      text-align: right;
     }
 
     #status.visible { opacity: 1; }
@@ -242,9 +257,37 @@
 <body>
   <canvas id="grid"></canvas>
 
-  <!-- Coords -->
+  <!-- Macro Stats -->
   <div class="overlay top-left">
-    <div class="coords" id="coords">(---, ---)</div>
+    <div class="stat-row-left">
+      <span class="stat-label">Price</span>
+      <span class="stat-value" id="statPrice">-</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row-left">
+      <span class="stat-label">FDV</span>
+      <span class="stat-value" id="statFdv">-</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row-left">
+      <span class="stat-label">24h</span>
+      <span class="stat-value" id="stat24h">-</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row-left">
+      <span class="stat-label">Pixels</span>
+      <span class="stat-value" id="statPixels">0</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row-left">
+      <span class="stat-label">Burned</span>
+      <span class="stat-value" id="statBurned">0 VV</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row-left">
+      <span class="stat-label">Block</span>
+      <span class="stat-value" id="statBlock">-</span>
+    </div>
   </div>
 
   <!-- Dynamic Title -->
@@ -265,20 +308,24 @@
     </div>
     <div class="divider"></div>
     <button id="connectBtn" onclick="connectWallet()">Connect</button>
+    <div class="divider"></div>
+    <div id="status"></div>
   </div>
 
   <!-- Pending + Color Picker -->
   <div class="overlay bottom-center" id="paletteContainer">
     <div class="pending-bar" id="pendingBar" style="display:none;">
       <div class="pending-info" id="pendingInfo"></div>
-      <div class="pending-fine-print">Anyone can paint over your pixels. No refunds.</div>
       <div class="pending-actions">
         <button class="burn-btn" onclick="burnPending()">Burn</button>
         <button onclick="clearPending()">Clear</button>
       </div>
       <div class="divider"></div>
     </div>
-    <div class="palette-row" id="palette"></div>
+    <div class="palette-row">
+      <div class="coords" id="coords">(---, ---)</div>
+      <div id="palette" style="display:flex;align-items:center;gap:6px;"></div>
+    </div>
   </div>
 
   <!-- Download + Leaderboard -->
@@ -308,16 +355,13 @@
     </div>
   </div>
 
-  <!-- Status -->
-  <div id="status"></div>
-
   <!-- Confirm Popover -->
   <div id="confirmOverlay" class="confirm-overlay" style="display:none;">
     <div class="confirm-box">
       <div class="confirm-cost" id="confirmCost"></div>
       <div class="confirm-warnings">
-        This will spend your tokens. They are destroyed forever.<br>
-        Anyone can paint over your pixels at any time.<br>
+        Tokens are destroyed forever.<br>
+        Pixels can be painted over.<br>
         No refunds.
       </div>
       <div class="confirm-actions">

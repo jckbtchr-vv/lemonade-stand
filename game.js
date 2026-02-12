@@ -314,6 +314,7 @@ function confirmBurn() {
     totalPixels += count;
     sessionPixels += count;
     document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
+    updatePixelStats();
     updateSessionCost();
     showStatus(`${count} pixel${count > 1 ? "s" : ""} burned`);
     pendingPixels = [];
@@ -399,6 +400,19 @@ canvas.addEventListener("mouseup", (e) => {
   }
 });
 
+// Stop drawing if mouse leaves the window
+window.addEventListener("mouseup", () => {
+  if (isDrawing) endStroke();
+  if (isPanning) {
+    isPanning = false;
+    canvas.style.cursor = "crosshair";
+  }
+});
+
+document.addEventListener("mouseleave", () => {
+  if (isDrawing) endStroke();
+});
+
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
 canvas.addEventListener("wheel", (e) => {
@@ -473,7 +487,7 @@ function selectColor(color) {
 let lastPriceFetch = 0;
 async function fetchTokenData() {
   const now = Date.now();
-  if (now - lastPriceFetch < 30000) return; // 30s cache
+  if (now - lastPriceFetch < 5000) return; // 30s cache
   lastPriceFetch = now;
 
   try {
@@ -482,9 +496,10 @@ async function fetchTokenData() {
     if (data.pairs && data.pairs[0]) {
       const pair = data.pairs[0];
       tokenPriceUsd = parseFloat(pair.priceUsd) || 0;
-      tokenMarketCap = pair.marketCap || pair.fdv || 0;
+      tokenMarketCap = pair.fdv || pair.marketCap || 0;
 
       updateTitle();
+      updateMacroStats(pair);
 
       const costEl = document.getElementById("pixelCost");
       const pricePerPixel = tokenPriceUsd * 1000;
@@ -502,6 +517,47 @@ function updateSessionCost() {
   if (el) {
     const cost = sessionPixels * 1000 * tokenPriceUsd;
     el.textContent = formatUsd(cost);
+  }
+}
+
+function updateMacroStats(pair) {
+  const priceEl = document.getElementById("statPrice");
+  const fdvEl = document.getElementById("statFdv");
+  const changeEl = document.getElementById("stat24h");
+
+  if (priceEl) priceEl.textContent = tokenPriceUsd > 0 ? formatUsd(tokenPriceUsd) : "-";
+  if (fdvEl) fdvEl.textContent = tokenMarketCap > 0 ? formatUsdCompact(tokenMarketCap) : "-";
+
+  if (changeEl && pair.priceChange) {
+    const change = pair.priceChange.h24;
+    if (change != null) {
+      const sign = change >= 0 ? "+" : "";
+      changeEl.textContent = `${sign}${change.toFixed(2)}%`;
+      changeEl.style.color = change >= 0 ? "#4f4" : "#f44";
+    }
+  }
+}
+
+function updatePixelStats() {
+  const pixelsEl = document.getElementById("statPixels");
+  const burnedEl = document.getElementById("statBurned");
+  if (pixelsEl) pixelsEl.textContent = totalPixels.toLocaleString();
+  if (burnedEl) burnedEl.textContent = (totalPixels * 1000).toLocaleString() + " VV";
+}
+
+async function updateBlock() {
+  try {
+    const res = await fetch("https://mainnet.base.org", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", method: "eth_blockNumber", params: [], id: 1 })
+    });
+    const data = await res.json();
+    const block = parseInt(data.result, 16);
+    const el = document.getElementById("statBlock");
+    if (el) el.textContent = block.toLocaleString();
+  } catch (e) {
+    console.error("Block fetch failed", e);
   }
 }
 
@@ -623,6 +679,7 @@ async function placePixelsBatch() {
     totalPixels += count;
     sessionPixels += count;
     document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
+    updatePixelStats();
     updateSessionCost();
 
     showStatus(`${count} pixel${count > 1 ? "s" : ""} burned`);
@@ -665,6 +722,7 @@ async function loadPixels() {
     });
 
     document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
+    updatePixelStats();
     queueRender();
     showStatus("");
   } catch (err) {
@@ -687,6 +745,7 @@ function listenForPixels() {
       setPixel(xi, yi, r, g, b);
       totalPixels++;
       document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
+      updatePixelStats();
       queueRender();
     });
   } catch (err) {
@@ -777,7 +836,9 @@ function showStatus(msg) {
 initBuffer();
 buildPalette();
 fetchTokenData();
-setInterval(fetchTokenData, 30000);
+updateBlock();
+setInterval(fetchTokenData, 5000);
+setInterval(updateBlock, 5000);
 
 // Center view
 viewX = GRID_SIZE / 2 - window.innerWidth / (2 * zoom);
