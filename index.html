@@ -5,89 +5,50 @@
   <title>LEMONADE.EXE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    @font-face {
-      font-family: 'Terminal';
-      src: local('Courier New'), local('Lucida Console'), local('monospace');
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Courier New', 'Lucida Console', monospace;
       background: #0a0a0a;
       color: #b0b0b0;
       min-height: 100vh;
-      padding: 12px;
-      font-size: 13px;
-      line-height: 1.4;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.5;
     }
 
-    /* CRT scanline overlay */
+    /* CRT scanlines */
     body::after {
       content: '';
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
       pointer-events: none;
       background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.15) 2px,
-        rgba(0,0,0,0.15) 4px
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,0.1) 3px, rgba(0,0,0,0.1) 6px
       );
       z-index: 9999;
     }
 
-    ::selection {
-      background: #33ff33;
-      color: #000;
-    }
+    ::selection { background: #33ff33; color: #000; }
 
-    .game-container {
-      max-width: 1100px;
+    .container {
+      max-width: 640px;
       margin: 0 auto;
     }
 
-    /* ── ASCII Box Drawing ── */
-    .ascii-box {
-      border: 1px solid #333;
-      position: relative;
-      margin-bottom: 8px;
-    }
-
-    .ascii-box::before {
-      content: attr(data-title);
-      position: absolute;
-      top: -1px;
-      left: 8px;
-      background: #0a0a0a;
-      padding: 0 6px;
-      color: #33ff33;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-
-    .ascii-box-inner {
-      padding: 14px 12px 10px;
-    }
-
-    /* ── Header / Logo ── */
+    /* ── Header ── */
     .header {
       text-align: center;
-      padding: 8px 0;
-      margin-bottom: 8px;
+      padding: 16px 0;
+      margin-bottom: 12px;
       border-bottom: 1px solid #222;
     }
 
     .ascii-logo {
       color: #cccc00;
-      font-size: 11px;
-      line-height: 1.15;
+      font-size: 14px;
+      line-height: 1.2;
       white-space: pre;
       display: inline-block;
       text-align: left;
@@ -95,63 +56,49 @@
 
     .header-sub {
       color: #555;
-      font-size: 11px;
-      margin-top: 4px;
+      font-size: 13px;
+      margin-top: 8px;
       letter-spacing: 1px;
     }
 
-    /* ── Top Bar ── */
-    .top-bar {
+    /* ── Wallet Bar ── */
+    .wallet-bar {
       display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
-      margin-bottom: 8px;
+      padding: 10px 0;
+      margin-bottom: 12px;
       border-bottom: 1px solid #222;
-      flex-wrap: wrap;
-      gap: 8px;
+      font-size: 13px;
     }
 
-    .wallet-controls {
+    .wallet-fields {
       display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 11px;
       flex-wrap: wrap;
+      gap: 6px 16px;
     }
 
-    .wallet-field {
-      color: #666;
-    }
+    .wf { color: #555; }
+    .wf .v { color: #b0b0b0; }
+    .wf .vh { color: #cccc00; }
 
-    .wallet-field .val {
-      color: #b0b0b0;
-    }
+    .warning { color: #ff4444; }
 
-    .wallet-field .val-highlight {
-      color: #cccc00;
-    }
-
-    .warning {
-      color: #ff4444;
-      font-size: 11px;
-    }
-
-    /* ── Grid Layout ── */
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+    .wallet-btns {
+      display: flex;
+      gap: 6px;
     }
 
     /* ── Buttons ── */
-    button, .btn {
+    button {
       background: #111;
-      color: #888;
+      color: #777;
       border: 1px solid #333;
-      padding: 5px 12px;
+      padding: 8px 16px;
       font-family: 'Courier New', monospace;
-      font-size: 11px;
+      font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 1px;
       cursor: pointer;
@@ -189,21 +136,61 @@
       background: #1a1a00;
     }
 
-    button.buy-vv {
+    button.buy-vv-btn {
       color: #555;
       border-color: #333;
     }
 
-    /* ── Stats ── */
-    .stats-row {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
+    /* ── Section Boxes ── */
+    .section {
+      border: 1px solid #222;
+      padding: 14px;
+      margin-bottom: 12px;
+      background: #080808;
     }
 
-    .stat-item {
-      font-size: 11px;
+    .section h2 {
+      font-size: 13px;
+      color: #33ff33;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+      font-weight: normal;
+    }
+
+    .section h2.cyan { color: #44aaaa; }
+    .section h2.magenta { color: #aa66aa; }
+    .section h2.green { color: #33aa33; }
+    .section h2.red { color: #aa3333; }
+
+    /* ── Gate ── */
+    .gate-msg {
+      border: 1px solid #333;
+      padding: 12px;
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .gate-msg strong { color: #cccc00; }
+
+    /* ── Phase ── */
+    .phase-ind {
+      font-size: 12px;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    /* ── Stats Row ── */
+    .stats-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 24px;
+      margin-bottom: 12px;
+      font-size: 14px;
     }
 
     .stat-item .label {
@@ -212,110 +199,104 @@
       letter-spacing: 1px;
     }
 
-    .stat-item .value {
-      color: #b0b0b0;
-      font-weight: bold;
+    .stat-item .value { color: #b0b0b0; font-weight: bold; }
+    .stat-item .value-cash { color: #cccc00; font-weight: bold; }
+
+    /* ── Trust Row ── */
+    .trust-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 24px;
+      padding: 10px 12px;
+      border: 1px solid #1a1a1a;
+      margin-bottom: 12px;
+      background: #080808;
     }
 
-    .stat-item .value-cash {
-      color: #cccc00;
+    .trust-item { font-size: 14px; }
+    .trust-item .t-label {
+      color: #884488;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
-
-    .stat-item .value-green {
-      color: #33ff33;
-    }
+    .trust-item .t-val { color: #b0b0b0; font-size: 18px; }
 
     /* ── Inventory ── */
     .inv-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      margin-bottom: 8px;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
     }
 
     .inv-item {
       border: 1px solid #222;
-      padding: 6px;
+      padding: 10px;
       text-align: center;
-      background: #080808;
+      background: #0a0a0a;
     }
 
     .inv-item .inv-label {
-      font-size: 10px;
+      font-size: 12px;
       color: #555;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
 
     .inv-item .inv-val {
-      font-size: 14px;
+      font-size: 20px;
       color: #b0b0b0;
-      margin: 2px 0;
+      margin: 4px 0;
     }
 
     .inv-item button {
       width: 100%;
-      padding: 3px;
-      font-size: 10px;
+      padding: 6px;
+      font-size: 12px;
     }
 
     /* ── Variables ── */
     .var-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      margin-bottom: 8px;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
     }
 
     .var-item {
-      font-size: 11px;
-      padding: 4px 6px;
+      padding: 8px 10px;
       border: 1px solid #1a1a1a;
-      background: #080808;
+      background: #0a0a0a;
     }
 
     .var-item .var-label {
       color: #444;
-      font-size: 10px;
+      font-size: 11px;
       text-transform: uppercase;
     }
 
     .var-item .var-val {
       color: #888;
-    }
-
-    /* ── Gate Message ── */
-    .gate-msg {
-      border: 1px solid #333;
-      padding: 8px;
-      color: #666;
-      font-size: 11px;
-      margin-bottom: 8px;
-      text-align: center;
-    }
-
-    .gate-msg strong {
-      color: #cccc00;
+      font-size: 15px;
     }
 
     /* ── Run Button ── */
-    .run-area {
-      margin-bottom: 8px;
-    }
+    .run-area { margin-bottom: 12px; }
 
     .run-btn {
       width: 100%;
-      padding: 12px;
-      font-size: 14px;
+      padding: 16px;
+      font-size: 18px;
       color: #33ff33;
       border-color: #33ff33;
       background: #0a0a0a;
-      letter-spacing: 3px;
+      letter-spacing: 4px;
     }
 
     .run-btn:hover:not(:disabled) {
       background: #0a1a0a;
-      box-shadow: 0 0 8px rgba(51, 255, 51, 0.15);
+      box-shadow: 0 0 10px rgba(51, 255, 51, 0.15);
     }
 
     .run-btn:disabled {
@@ -325,285 +306,193 @@
 
     .cooldown-text {
       text-align: center;
-      font-size: 10px;
+      font-size: 12px;
       color: #444;
-      margin-top: 4px;
+      margin-top: 6px;
     }
 
-    /* ── Trust Display ── */
-    .trust-row {
-      display: flex;
-      gap: 16px;
-      padding: 6px 8px;
-      border: 1px solid #1a1a1a;
-      margin-bottom: 8px;
-      background: #080808;
-    }
+    /* ── Muted ── */
+    .muted { color: #444; font-size: 13px; }
+    .weather-text { color: #555; font-size: 13px; margin-bottom: 10px; }
 
-    .trust-item {
-      text-align: center;
-      font-size: 11px;
-    }
-
-    .trust-item .t-label {
-      color: #884488;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .trust-item .t-val {
-      color: #b0b0b0;
-      font-size: 14px;
-    }
-
-    /* ── Compute Section ── */
-    .compute-box {
-      border: 1px solid #1a1a1a;
-      padding: 8px;
-      margin-bottom: 8px;
-      background: #080808;
-    }
-
-    .compute-box h3 {
-      font-size: 10px;
-      color: #336666;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 8px;
-    }
-
+    /* ── Compute ── */
     .resource-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-      font-size: 11px;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 14px;
     }
 
     .resource-row .r-label {
       color: #555;
-      min-width: 80px;
-      font-size: 10px;
+      min-width: 90px;
+      font-size: 12px;
       text-transform: uppercase;
     }
 
     .ascii-bar {
       flex: 1;
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      color: #336666;
+      font-size: 14px;
+      color: #44aaaa;
       overflow: hidden;
       white-space: nowrap;
     }
 
     .resource-row .r-val {
       color: #666;
-      min-width: 70px;
+      min-width: 80px;
       text-align: right;
-      font-size: 11px;
+      font-size: 13px;
     }
 
     .compute-btns {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-top: 8px;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
     }
 
     .compute-btns button {
-      font-size: 10px;
-      padding: 6px 4px;
-      color: #336666;
+      font-size: 12px;
+      padding: 8px 6px;
+      color: #44aaaa;
       border-color: #1a3333;
     }
 
     .compute-btns button:hover:not(:disabled) {
-      color: #44aaaa;
-      border-color: #44aaaa;
+      color: #66cccc;
+      border-color: #66cccc;
       background: #0a1515;
     }
 
     .compute-btns .cost {
       display: block;
       color: #333;
-      font-size: 9px;
+      font-size: 11px;
       margin-top: 2px;
     }
 
-    /* ── Upgrades / Operations ── */
+    /* ── Token Cost Tag ── */
+    .token-cost-tag {
+      font-size: 11px;
+      color: #664400;
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* ── Upgrades ── */
     .upgrade-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
+      max-height: 400px;
       overflow-y: auto;
-      max-height: 280px;
     }
 
     .upgrade-item {
       border: 1px solid #1a1a1a;
-      padding: 8px;
-      background: #080808;
+      padding: 10px;
+      background: #0a0a0a;
     }
 
     .upgrade-header {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
     }
 
-    .upgrade-name {
-      color: #888;
-      font-size: 12px;
-    }
-
-    .upgrade-cost {
-      color: #555;
-      font-size: 11px;
-    }
+    .upgrade-name { color: #888; font-size: 14px; }
+    .upgrade-cost { color: #555; font-size: 13px; }
 
     .upgrade-desc {
       color: #444;
-      font-size: 10px;
-      margin-bottom: 6px;
+      font-size: 12px;
+      margin-bottom: 8px;
     }
 
     .upgrade-item button {
       width: 100%;
-      font-size: 10px;
+      font-size: 12px;
     }
 
     /* ── Projects ── */
-    .projects-box {
-      border: 1px solid #1a1a1a;
-      padding: 8px;
-      margin-top: 8px;
-      background: #080808;
-    }
-
-    .projects-box h3 {
-      font-size: 10px;
-      color: #884488;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 8px;
-    }
-
     .project-item {
       border: 1px solid #1a1a1a;
-      padding: 8px;
-      margin-bottom: 6px;
-      background: #050505;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #0a0a0a;
     }
 
-    .project-item.affordable {
-      border-color: #553355;
-    }
+    .project-item.affordable { border-color: #553355; }
 
-    .project-name {
-      color: #888;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .project-desc {
-      color: #444;
-      font-size: 10px;
-      margin: 2px 0;
-    }
-
-    .project-cost {
-      color: #663366;
-      font-size: 10px;
-      margin-bottom: 6px;
-    }
+    .project-name { color: #888; font-size: 14px; font-weight: bold; }
+    .project-desc { color: #444; font-size: 12px; margin: 4px 0; }
+    .project-cost { color: #663366; font-size: 12px; margin-bottom: 8px; }
 
     .project-item button {
       width: 100%;
-      font-size: 10px;
-      color: #884488;
+      font-size: 12px;
+      color: #aa66aa;
       border-color: #442244;
     }
 
     .project-item button:hover:not(:disabled) {
-      color: #bb66bb;
-      border-color: #bb66bb;
+      color: #cc88cc;
+      border-color: #cc88cc;
       background: #1a0a1a;
     }
 
-    /* ── Franchise Section ── */
-    .franchise-box {
-      border: 1px solid #1a1a1a;
-      padding: 8px;
-      margin-top: 8px;
-      background: #080808;
+    /* ── Franchise ── */
+    .franchise-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
     }
 
-    .franchise-box h3 {
-      font-size: 10px;
-      color: #228822;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 6px;
-    }
-
-    .franchise-box button {
-      color: #228822;
+    .franchise-row button {
+      color: #33aa33;
       border-color: #1a3a1a;
     }
 
-    .franchise-box button:hover:not(:disabled) {
+    .franchise-row button:hover:not(:disabled) {
       color: #33ff33;
       border-color: #33ff33;
       background: #0a150a;
     }
 
     /* ── Singularity ── */
-    .singularity-box {
-      border: 1px solid #331111;
-      padding: 10px;
-      margin-top: 8px;
-      background: #0a0505;
-    }
-
-    .singularity-box h3 {
-      font-size: 10px;
-      color: #aa3333;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 8px;
-    }
-
     .sing-stats {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .sing-stat {
       text-align: center;
-      padding: 6px;
+      padding: 8px;
       border: 1px solid #221111;
     }
 
     .sing-stat .s-label {
-      font-size: 9px;
+      font-size: 11px;
       color: #553333;
       text-transform: uppercase;
     }
 
     .sing-stat .s-val {
-      font-size: 13px;
+      font-size: 16px;
       color: #aa3333;
     }
 
     .probe-btn {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       color: #aa3333;
       border-color: #551111;
-      font-size: 11px;
+      font-size: 13px;
     }
 
     .probe-btn:hover:not(:disabled) {
@@ -614,61 +503,44 @@
 
     .probe-btn .probe-cost {
       display: block;
-      font-size: 9px;
+      font-size: 11px;
       color: #442222;
       margin-top: 2px;
     }
 
     /* ── Chart ── */
-    .chart-box {
-      border: 1px solid #1a1a1a;
-      padding: 8px;
-      margin-top: 8px;
-      background: #080808;
-    }
-
-    .chart-box h3 {
-      font-size: 10px;
-      color: #33ff33;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 6px;
-    }
-
     #plChart {
       width: 100%;
-      height: 100px;
+      height: 120px;
       display: block;
       background: #050505;
     }
 
     .chart-stats {
       display: flex;
-      gap: 16px;
-      margin-top: 6px;
-      font-size: 10px;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      margin-top: 8px;
+      font-size: 12px;
       color: #444;
     }
 
-    .chart-stats .val {
-      color: #666;
-    }
+    .chart-stats .val { color: #666; }
 
-    /* ── Shift Reports ── */
+    /* ── Reports ── */
     .report-log {
-      margin-top: 8px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      max-height: 180px;
+      gap: 8px;
+      max-height: 240px;
       overflow-y: auto;
     }
 
     .report-card {
       border: 1px solid #1a1a1a;
-      background: #080808;
-      padding: 8px;
-      font-size: 11px;
+      background: #0a0a0a;
+      padding: 10px;
+      font-size: 13px;
     }
 
     .report-header {
@@ -676,7 +548,7 @@
       justify-content: space-between;
       margin-bottom: 4px;
       color: #555;
-      font-size: 10px;
+      font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -684,54 +556,28 @@
     .report-body {
       color: #666;
       margin-bottom: 6px;
-      font-size: 11px;
     }
 
     .report-metrics {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
       border-top: 1px solid #1a1a1a;
-      padding-top: 4px;
-      font-size: 10px;
+      padding-top: 6px;
+      font-size: 12px;
       color: #444;
     }
 
-    .report-metric span {
-      display: block;
-      color: #777;
-    }
+    .report-metric span { display: block; color: #777; }
 
     .market-event {
-      margin-top: 6px;
-      padding: 4px 6px;
+      margin-top: 8px;
+      padding: 6px 8px;
       background: #0a0a0a;
       border: 1px solid #333;
       color: #33ff33;
-      font-size: 10px;
+      font-size: 12px;
       text-transform: uppercase;
-    }
-
-    .muted {
-      color: #444;
-      font-size: 11px;
-    }
-
-    /* ── Phase Indicator ── */
-    .phase-ind {
-      font-size: 10px;
-      color: #444;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 6px;
-    }
-
-    /* ── Token Cost Indicator ── */
-    .token-cost-tag {
-      font-size: 9px;
-      color: #664400;
-      display: block;
-      margin-top: 1px;
     }
 
     /* ── Narrative Overlay ── */
@@ -743,39 +589,42 @@
       z-index: 1000;
       align-items: center;
       justify-content: center;
+      padding: 20px;
     }
 
     .narrative-card {
-      max-width: 460px;
-      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+      padding: 28px;
       border: 1px solid #33ff33;
       background: #0a0a0a;
       text-align: center;
     }
 
     .narrative-title {
-      font-size: 14px;
+      font-size: 16px;
       color: #33ff33;
       text-transform: uppercase;
       letter-spacing: 4px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .narrative-messages p {
       color: #777;
-      line-height: 1.6;
-      margin-bottom: 10px;
-      font-size: 12px;
+      line-height: 1.7;
+      margin-bottom: 12px;
+      font-size: 14px;
     }
 
     .narrative-card button {
-      margin-top: 16px;
-      padding: 8px 24px;
+      margin-top: 20px;
+      padding: 10px 28px;
       color: #33ff33;
       border-color: #33ff33;
+      font-size: 14px;
     }
 
-    /* ── TX Pending Overlay ── */
+    /* ── TX Pending ── */
     .tx-pending {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -788,30 +637,19 @@
 
     .tx-pending-inner {
       border: 1px solid #cccc00;
-      padding: 20px 30px;
+      padding: 24px 36px;
       background: #0a0a0a;
       text-align: center;
       color: #cccc00;
-      font-size: 12px;
+      font-size: 14px;
       letter-spacing: 2px;
       text-transform: uppercase;
     }
 
     .tx-pending-inner .spinner {
-      margin-top: 8px;
+      margin-top: 10px;
       color: #666;
-      font-size: 11px;
-    }
-
-    /* ── Responsive ── */
-    @media (max-width: 800px) {
-      .top-bar { flex-direction: column; align-items: flex-start; }
-      .wallet-controls { width: 100%; flex-wrap: wrap; }
-      .grid { grid-template-columns: 1fr; }
-      .var-grid { grid-template-columns: 1fr 1fr; }
-      .inv-grid { grid-template-columns: 1fr 1fr; }
-      .compute-btns { grid-template-columns: 1fr; }
-      .sing-stats { grid-template-columns: 1fr; }
+      font-size: 13px;
     }
   </style>
 </head>
@@ -822,240 +660,236 @@
   <!-- TX Pending Overlay -->
   <div class="tx-pending" id="txPending">
     <div class="tx-pending-inner">
-      Awaiting transaction...<br>
+      awaiting transaction...<br>
       <span class="spinner" id="txSpinner">confirm in wallet</span>
     </div>
   </div>
 
-  <div class="game-container">
+  <div class="container">
     <!-- Header -->
     <div class="header">
       <pre class="ascii-logo">
- _                                    _
-| |___ _ __  ___ _ _  __ _ __| |___
-| / -_) '  \/ _ \ ' \/ _` / _` / -_)
-|_\___|_|_|_\___/_||_\__,_\__,_\___|
-       .  e  x  e            v0.2</pre>
-      <div class="header-sub">hold 1,000 $VV on base to play &middot; all actions cost real tokens</div>
+ _                                  _
+| | ___ _ __ ___   ___  _ __   __ _| |
+| |/ _ \ '_ ` _ \ / _ \| '_ \ / _` | |
+| |  __/ | | | | | (_) | | | | (_| |_|
+|_|\___|_| |_| |_|\___/|_| |_|\__,_(_)
+         .  e  x  e          v0.2</pre>
+      <div class="header-sub">hold 1,000 $VV on base to play // all actions cost real tokens</div>
     </div>
 
-    <!-- Top Bar: Wallet -->
-    <div class="top-bar">
-      <div class="wallet-controls">
+    <!-- Wallet Bar -->
+    <div class="wallet-bar">
+      <div class="wallet-fields">
         <span id="networkWarning" class="warning" style="display:none;">[!] WRONG NETWORK</span>
-        <span class="wallet-field">cost(1k): <span class="val-highlight" id="costToPlay">-</span></span>
-        <span class="wallet-field">bal: <span class="val" id="tokenBalance">-</span></span>
-        <span class="wallet-field">addr: <span class="val" id="walletAddress">disconnected</span></span>
+        <span class="wf">cost(1k): <span class="vh" id="costToPlay">-</span></span>
+        <span class="wf">bal: <span class="v" id="tokenBalance">-</span></span>
+        <span class="wf">addr: <span class="v" id="walletAddress">disconnected</span></span>
       </div>
-      <div style="display:flex; gap:6px;">
+      <div class="wallet-btns">
         <button class="connect-btn" id="connectWalletButton" onclick="connectWallet()">CONNECT</button>
         <a href="https://zora.co/visualizevalue" target="_blank" style="text-decoration:none;">
-          <button class="buy-vv">BUY $VV</button>
+          <button class="buy-vv-btn">BUY $VV</button>
         </a>
       </div>
     </div>
 
-    <div class="grid">
-      <!-- ═══ LEFT PANEL ═══ -->
-      <div>
-        <div class="phase-ind">phase: <span id="currentPhase">street stand</span></div>
+    <!-- Phase -->
+    <div class="phase-ind">phase: <span id="currentPhase">street stand</span></div>
 
-        <div id="gateMessage" class="gate-msg">
-          connect a wallet holding at least <strong>1,000 $VV</strong> on base to play.
-        </div>
+    <!-- Gate -->
+    <div id="gateMessage" class="gate-msg">
+      connect a wallet holding at least <strong>1,000 $VV</strong> on base to play.
+    </div>
 
-        <!-- Trust & Resources -->
-        <div class="trust-row">
-          <div class="trust-item">
-            <div class="t-label">trust</div>
-            <div class="t-val" id="trustCount">0</div>
-          </div>
-          <div class="trust-item">
-            <div class="t-label">total cups</div>
-            <div class="t-val" id="totalCupsEver">0</div>
-          </div>
-          <div class="trust-item" id="creativityDisplay" style="display:none;">
-            <div class="t-label">creativity</div>
-            <div class="t-val" id="creativityCount">0</div>
-          </div>
-        </div>
-
-        <!-- Stats -->
-        <div class="stats-row">
-          <div class="stat-item">
-            <span class="label">CASH </span>
-            <span class="value value-cash" id="cash">$10.00</span>
-          </div>
-          <div class="stat-item">
-            <span class="label">CUPS </span>
-            <span class="value" id="cups">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="label">TOKENS SPENT </span>
-            <span class="value" style="color:#664400;" id="tokensSpent">0.00</span>
-          </div>
-        </div>
-
-        <!-- Inventory -->
-        <div class="inv-grid" id="inventoryGrid">
-          <div class="inv-item">
-            <div class="inv-label">lemons</div>
-            <div class="inv-val" id="invLemons">0</div>
-            <button onclick="buyIngredient('lemons')">+5 ($2.50)<span class="token-cost-tag">0.25 $VV</span></button>
-          </div>
-          <div class="inv-item">
-            <div class="inv-label">sugar</div>
-            <div class="inv-val" id="invSugar">0</div>
-            <button onclick="buyIngredient('sugar')">+5 ($1.00)<span class="token-cost-tag">0.10 $VV</span></button>
-          </div>
-          <div class="inv-item">
-            <div class="inv-label">ice</div>
-            <div class="inv-val" id="invIce">0</div>
-            <button onclick="buyIngredient('ice')">+5 ($0.50)<span class="token-cost-tag">0.05 $VV</span></button>
-          </div>
-          <div class="inv-item">
-            <div class="inv-label">cups</div>
-            <div class="inv-val" id="invCups">0</div>
-            <button onclick="buyIngredient('cups')">+5 ($0.50)<span class="token-cost-tag">0.05 $VV</span></button>
-          </div>
-        </div>
-
-        <!-- Variables -->
-        <div class="var-grid">
-          <div class="var-item">
-            <div class="var-label">price/cup</div>
-            <div class="var-val" id="varPrice">$0.50</div>
-          </div>
-          <div class="var-item">
-            <div class="var-label">cost/cup</div>
-            <div class="var-val" id="varCost">dynamic</div>
-          </div>
-          <div class="var-item">
-            <div class="var-label">ops speed</div>
-            <div class="var-val" id="varOps">1.0x</div>
-          </div>
-          <div class="var-item">
-            <div class="var-label">hype</div>
-            <div class="var-val" id="varHype">1.0x</div>
-          </div>
-        </div>
-
-        <!-- Weather -->
-        <div style="margin-bottom:8px;">
-          <span class="muted" id="weatherText">weather: unknown &middot; demand: waiting...</span>
-        </div>
-
-        <!-- Run Button -->
-        <div class="run-area">
-          <button id="runButton" class="run-btn" onclick="runStand()" disabled>
-            &gt; RUN STAND _
-          </button>
-          <div class="cooldown-text" id="cooldownMessage"></div>
-        </div>
-
-        <!-- Compute Resources -->
-        <div class="compute-box" id="computeSection">
-          <h3>// compute resources</h3>
-
-          <div class="resource-row">
-            <span class="r-label">processing</span>
-            <span class="ascii-bar" id="processingBarAscii">[....................] </span>
-            <span class="r-val"><span id="processingPower">0</span>/<span id="maxProcessingPower">100</span></span>
-          </div>
-
-          <div class="compute-btns">
-            <button onclick="buyProcessor()">
-              processor (<span id="processorCount">0</span>)
-              <span class="cost" id="processorCost">$50.00</span>
-              <span class="token-cost-tag">0.50 $VV</span>
-            </button>
-            <button onclick="buyMemory()">
-              memory (<span id="memoryCount">0</span>)
-              <span class="cost" id="memoryCost">$100.00</span>
-              <span class="token-cost-tag">1.00 $VV</span>
-            </button>
-            <button onclick="buyAutoWorker()">
-              auto-worker (<span id="autoWorkerCount">0</span>)
-              <span class="cost" id="autoWorkerCost">$100.00</span>
-              <span class="token-cost-tag">1.00 $VV</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Shift Reports -->
-        <div id="shiftReports" class="report-log"></div>
+    <!-- Trust -->
+    <div class="trust-row">
+      <div class="trust-item">
+        <div class="t-label">trust</div>
+        <div class="t-val" id="trustCount">0</div>
       </div>
-
-      <!-- ═══ RIGHT PANEL ═══ -->
-      <div>
-        <div class="ascii-box" data-title="operations">
-          <div class="ascii-box-inner">
-            <div id="upgradesList" class="upgrade-list">
-              <div class="muted">connect wallet to load operations.</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Strategic Projects -->
-        <div class="projects-box" id="projectsSection" style="display:none;">
-          <h3>// strategic projects</h3>
-          <div class="muted" style="margin-bottom:6px;">spend trust & resources on breakthroughs.</div>
-          <div id="projectsList" class="upgrade-list">
-            <div class="muted">no projects available.</div>
-          </div>
-        </div>
-
-        <!-- Franchises -->
-        <div class="franchise-box" id="franchiseSection" style="display:none;">
-          <h3>// franchises</h3>
-          <div class="muted" style="margin-bottom:6px;">each franchise generates $5/tick passive income.</div>
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="muted">owned: <strong id="franchiseCount" style="color:#228822;">0</strong></span>
-            <button onclick="buyFranchise()">
-              buy franchise
-              <span class="cost" id="franchiseCost">$10,000</span>
-              <span class="token-cost-tag">10.00 $VV</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Singularity -->
-        <div class="singularity-box" id="singularitySection" style="display:none;">
-          <h3>// universal lemonization</h3>
-          <div class="muted" style="margin-bottom:8px;">the AI has awakened. it seeks to optimize... everything.</div>
-
-          <div class="sing-stats">
-            <div class="sing-stat">
-              <div class="s-label">probes</div>
-              <div class="s-val" id="probeCount">0</div>
-            </div>
-            <div class="sing-stat">
-              <div class="s-label">universal lemons</div>
-              <div class="s-val" id="universalLemons">0</div>
-            </div>
-            <div class="sing-stat">
-              <div class="s-label">converted</div>
-              <div class="s-val" id="universePercentage">0.000000%</div>
-            </div>
-          </div>
-
-          <button class="probe-btn" onclick="launchProbe()">
-            &gt; launch self-replicating probe
-            <span class="probe-cost">cost: $1,000,000,000 &middot; 100.00 $VV</span>
-          </button>
-        </div>
+      <div class="trust-item">
+        <div class="t-label">total cups</div>
+        <div class="t-val" id="totalCupsEver">0</div>
+      </div>
+      <div class="trust-item" id="creativityDisplay" style="display:none;">
+        <div class="t-label">creativity</div>
+        <div class="t-val" id="creativityCount">0</div>
       </div>
     </div>
 
-    <!-- Chart -->
-    <div class="chart-box">
-      <h3>// p&amp;l (cumulative)</h3>
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-item">
+        <span class="label">CASH </span>
+        <span class="value value-cash" id="cash">$10.00</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">CUPS </span>
+        <span class="value" id="cups">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">$VV SPENT </span>
+        <span class="value" style="color:#664400;" id="tokensSpent">0.00</span>
+      </div>
+    </div>
+
+    <!-- Inventory -->
+    <div class="inv-grid" id="inventoryGrid">
+      <div class="inv-item">
+        <div class="inv-label">lemons</div>
+        <div class="inv-val" id="invLemons">0</div>
+        <button onclick="buyIngredient('lemons')">+5 ($2.50)<span class="token-cost-tag">0.25 $VV</span></button>
+      </div>
+      <div class="inv-item">
+        <div class="inv-label">sugar</div>
+        <div class="inv-val" id="invSugar">0</div>
+        <button onclick="buyIngredient('sugar')">+5 ($1.00)<span class="token-cost-tag">0.10 $VV</span></button>
+      </div>
+      <div class="inv-item">
+        <div class="inv-label">ice</div>
+        <div class="inv-val" id="invIce">0</div>
+        <button onclick="buyIngredient('ice')">+5 ($0.50)<span class="token-cost-tag">0.05 $VV</span></button>
+      </div>
+      <div class="inv-item">
+        <div class="inv-label">cups</div>
+        <div class="inv-val" id="invCups">0</div>
+        <button onclick="buyIngredient('cups')">+5 ($0.50)<span class="token-cost-tag">0.05 $VV</span></button>
+      </div>
+    </div>
+
+    <!-- Variables -->
+    <div class="var-grid">
+      <div class="var-item">
+        <div class="var-label">price/cup</div>
+        <div class="var-val" id="varPrice">$0.50</div>
+      </div>
+      <div class="var-item">
+        <div class="var-label">cost/cup</div>
+        <div class="var-val" id="varCost">dynamic</div>
+      </div>
+      <div class="var-item">
+        <div class="var-label">ops speed</div>
+        <div class="var-val" id="varOps">1.0x</div>
+      </div>
+      <div class="var-item">
+        <div class="var-label">hype</div>
+        <div class="var-val" id="varHype">1.0x</div>
+      </div>
+    </div>
+
+    <!-- Weather -->
+    <div class="weather-text" id="weatherText">weather: unknown | demand: waiting...</div>
+
+    <!-- Run Stand -->
+    <div class="run-area">
+      <button id="runButton" class="run-btn" onclick="runStand()" disabled>
+        &gt; RUN STAND _
+      </button>
+      <div class="cooldown-text" id="cooldownMessage"></div>
+    </div>
+
+    <!-- Compute Resources -->
+    <div class="section" id="computeSection">
+      <h2 class="cyan">// compute resources</h2>
+
+      <div class="resource-row">
+        <span class="r-label">processing</span>
+        <span class="ascii-bar" id="processingBarAscii">[....................] </span>
+        <span class="r-val"><span id="processingPower">0</span>/<span id="maxProcessingPower">100</span></span>
+      </div>
+
+      <div class="compute-btns">
+        <button onclick="buyProcessor()">
+          processor (<span id="processorCount">0</span>)
+          <span class="cost" id="processorCost">$50.00</span>
+          <span class="token-cost-tag">0.50 $VV</span>
+        </button>
+        <button onclick="buyMemory()">
+          memory (<span id="memoryCount">0</span>)
+          <span class="cost" id="memoryCost">$100.00</span>
+          <span class="token-cost-tag">1.00 $VV</span>
+        </button>
+        <button onclick="buyAutoWorker()">
+          auto-worker (<span id="autoWorkerCount">0</span>)
+          <span class="cost" id="autoWorkerCost">$100.00</span>
+          <span class="token-cost-tag">1.00 $VV</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Operations & Upgrades -->
+    <div class="section">
+      <h2>// operations</h2>
+      <div id="upgradesList" class="upgrade-list">
+        <div class="muted">connect wallet to load operations.</div>
+      </div>
+    </div>
+
+    <!-- Strategic Projects -->
+    <div class="section" id="projectsSection" style="display:none;">
+      <h2 class="magenta">// strategic projects</h2>
+      <div class="muted" style="margin-bottom:8px;">spend trust & resources on breakthroughs.</div>
+      <div id="projectsList" class="upgrade-list">
+        <div class="muted">no projects available.</div>
+      </div>
+    </div>
+
+    <!-- Franchises -->
+    <div class="section" id="franchiseSection" style="display:none;">
+      <h2 class="green">// franchises</h2>
+      <div class="muted" style="margin-bottom:8px;">each franchise generates $5/tick passive income.</div>
+      <div class="franchise-row">
+        <span>owned: <strong id="franchiseCount" style="color:#33aa33;">0</strong></span>
+        <button onclick="buyFranchise()">
+          buy franchise
+          <span class="cost" id="franchiseCost">$10,000</span>
+          <span class="token-cost-tag">10.00 $VV</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Singularity -->
+    <div class="section" id="singularitySection" style="display:none; border-color:#331111; background:#0a0505;">
+      <h2 class="red">// universal lemonization</h2>
+      <div class="muted" style="margin-bottom:10px;">the AI has awakened. it seeks to optimize... everything.</div>
+
+      <div class="sing-stats">
+        <div class="sing-stat">
+          <div class="s-label">probes</div>
+          <div class="s-val" id="probeCount">0</div>
+        </div>
+        <div class="sing-stat">
+          <div class="s-label">universal lemons</div>
+          <div class="s-val" id="universalLemons">0</div>
+        </div>
+        <div class="sing-stat">
+          <div class="s-label">converted</div>
+          <div class="s-val" id="universePercentage">0.000000%</div>
+        </div>
+      </div>
+
+      <button class="probe-btn" onclick="launchProbe()">
+        &gt; launch self-replicating probe
+        <span class="probe-cost">cost: $1,000,000,000 &middot; 100.00 $VV</span>
+      </button>
+    </div>
+
+    <!-- P&L Chart -->
+    <div class="section">
+      <h2>// p&amp;l (cumulative)</h2>
       <canvas id="plChart"></canvas>
       <div class="chart-stats">
         <span>rev: <span class="val" id="totalRevenue">$0.00</span></span>
         <span>cost: <span class="val" id="totalCost">$0.00</span></span>
-        <span>tokens burned: <span class="val" style="color:#664400;" id="totalTokensBurned">0.00</span></span>
+        <span>$VV burned: <span class="val" style="color:#664400;" id="totalTokensBurned">0.00</span></span>
       </div>
+    </div>
+
+    <!-- Shift Reports -->
+    <div class="section">
+      <h2>// shift log</h2>
+      <div id="shiftReports" class="report-log"></div>
     </div>
   </div>
 
