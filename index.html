@@ -2,237 +2,263 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>lemonade.exe</title>
+  <title>Lemonade Stand</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    :root {
+      --bg: #0c0d12;
+      --surface: #16181f;
+      --surface2: #1c1e26;
+      --border: #262938;
+      --text: #d4d7e0;
+      --muted: #5c6070;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --gold: #eab308;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Courier New', monospace;
-      background: #0a0a0a;
-      color: #aaa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       padding: 16px;
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.5;
     }
 
-    body::after {
-      content: '';
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none;
-      background: repeating-linear-gradient(
-        0deg, transparent, transparent 3px,
-        rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 6px
-      );
-      z-index: 9999;
-    }
-
-    ::selection { background: #33ff33; color: #000; }
-
     #app { max-width: 480px; margin: 0 auto; }
 
-    .logo {
-      color: #cc0; font-size: 13px; line-height: 1.15;
-      white-space: pre; text-align: center;
+    /* header */
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 0; margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
     }
 
-    .sub {
-      color: #555; font-size: 12px; text-align: center;
-      margin: 8px 0 16px; letter-spacing: 1px;
-    }
+    header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+    header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .hdr-btns { display: flex; gap: 8px; }
 
-    .bar {
-      display: flex; flex-wrap: wrap; gap: 6px 16px;
-      align-items: center; justify-content: space-between;
-      padding: 10px 0;
-      border-top: 1px solid #222; border-bottom: 1px solid #222;
-      margin-bottom: 16px; font-size: 13px;
-    }
-
-    .bar .f { color: #555; }
-    .bar .v { color: #aaa; }
-    .bar .vh { color: #cc0; }
-    .warn { color: #f44; display: none; }
-
+    /* buttons */
     button {
-      background: #111; color: #777; border: 1px solid #333;
-      padding: 8px 16px; font-family: 'Courier New', monospace;
-      font-size: 13px; cursor: pointer; text-transform: uppercase;
-      letter-spacing: 1px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
     }
 
-    button:hover:not(:disabled) { color: #3f3; border-color: #3f3; background: #0a1a0a; }
-    button:disabled { color: #333; border-color: #1a1a1a; cursor: not-allowed; background: #080808; }
+    button:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--text);
+    }
 
+    button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-connect { color: var(--gold); border-color: var(--gold); }
+    .btn-connect:hover { background: rgba(234,179,8,0.08); color: var(--gold); border-color: var(--gold); }
+
+    /* panels */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .panel h2 {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    /* status bar */
+    .status {
+      display: flex; flex-wrap: wrap; gap: 6px 16px;
+      font-size: 13px; color: var(--muted);
+      padding: 10px 14px;
+    }
+
+    .status .val { color: var(--text); }
+    .status .gold { color: var(--gold); font-weight: 600; }
+    .warn { color: var(--red); font-weight: 600; display: none; }
+
+    /* gate */
     .gate {
-      border: 1px solid #333; padding: 12px; color: #666;
-      text-align: center; margin-bottom: 16px; font-size: 14px;
+      text-align: center; padding: 16px;
+      color: var(--muted); font-size: 14px;
     }
-    .gate strong { color: #cc0; }
 
+    .gate strong { color: var(--gold); }
+
+    /* stats */
     .stats {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 8px; margin-bottom: 16px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-bottom: 12px;
     }
 
     .stat {
-      padding: 10px; border: 1px solid #222;
-      background: #080808; text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px; text-align: center;
     }
 
     .stat .label {
-      font-size: 11px; color: #555;
-      text-transform: uppercase; letter-spacing: 1px;
+      font-size: 10px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
     }
 
-    .stat .val { font-size: 20px; color: #aaa; }
-    .stat .val.cash { color: #cc0; }
+    .stat .val { font-size: 22px; font-weight: 600; margin-top: 2px; }
+    .stat .val.gold { color: var(--gold); }
 
-    .weather { color: #555; font-size: 13px; margin-bottom: 12px; }
+    /* weather */
+    .weather { font-size: 13px; color: var(--muted); margin-bottom: 12px; padding: 0 2px; }
 
-    .actions {
-      margin-bottom: 16px;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-
+    /* actions */
+    .actions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
     .actions button { width: 100%; padding: 12px; font-size: 14px; }
 
-    .actions .run {
-      color: #3f3; border-color: #3f3;
-      font-size: 18px; padding: 16px; letter-spacing: 4px;
+    .run-btn {
+      background: var(--accent) !important;
+      border-color: var(--accent) !important;
+      color: white !important;
+      font-size: 16px !important;
+      padding: 16px !important;
+      font-weight: 600;
+      border-radius: 10px;
     }
 
-    .actions .run:hover:not(:disabled) { background: #0a1a0a; }
-    .actions .run:disabled { color: #1a3a1a; border-color: #1a3a1a; }
-
-    .vv { font-size: 11px; color: #640; display: block; margin-top: 2px; }
-
-    .cd { text-align: center; font-size: 12px; color: #444; }
-
-    .section {
-      border: 1px solid #222; padding: 14px;
-      margin-bottom: 12px; background: #080808;
+    .run-btn:hover:not(:disabled) {
+      background: var(--accent-hover) !important;
+      border-color: var(--accent-hover) !important;
     }
 
-    .section h2 {
-      font-size: 12px; color: #3f3;
-      text-transform: uppercase; letter-spacing: 2px;
-      margin-bottom: 10px; font-weight: normal;
-    }
+    .run-btn:disabled { opacity: 0.25; }
 
+    .vv-tag { font-size: 11px; color: var(--gold); opacity: 0.7; margin-left: 4px; }
+    .cd { text-align: center; font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* upgrades */
     .up {
-      border: 1px solid #1a1a1a; padding: 10px; margin-bottom: 8px;
-      display: flex; justify-content: space-between;
-      align-items: center; gap: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px; border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 8px;
+      background: var(--surface2);
     }
 
-    .up .name { color: #888; font-size: 14px; }
-    .up .desc { color: #444; font-size: 12px; }
+    .up .name { color: var(--text); font-size: 14px; font-weight: 500; }
+    .up .desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
 
+    /* log */
     .log-entry {
-      padding: 4px 0; border-bottom: 1px solid #111;
-      font-size: 13px; color: #555;
+      padding: 6px 0; border-bottom: 1px solid var(--border);
+      font-size: 13px; color: var(--muted);
     }
 
-    .log-entry .hi { color: #3f3; }
-    .log-entry .lo { color: #a33; }
+    .log-entry:last-child { border-bottom: none; }
+    .log-entry .hi { color: var(--green); }
+    .log-entry .lo { color: var(--red); }
 
+    /* overlay */
     .overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85); z-index: 500;
+      background: rgba(12,13,18,0.9); z-index: 500;
       display: none; align-items: center; justify-content: center;
     }
 
     .overlay-box {
-      border: 1px solid #cc0; padding: 24px 36px;
-      background: #0a0a0a; text-align: center;
-      color: #cc0; font-size: 14px; letter-spacing: 2px;
-      text-transform: uppercase;
+      background: var(--surface); border: 1px solid var(--gold);
+      border-radius: 12px; padding: 28px 36px;
+      text-align: center; color: var(--gold);
+      font-size: 14px; font-weight: 500;
     }
 
-    .btns { display: flex; gap: 6px; }
-    .conn { color: #cc0; border-color: #cc0; }
-    .conn:hover { background: #1a1a00 !important; color: #cc0 !important; border-color: #cc0 !important; }
+    .overlay-box .sub { color: var(--muted); font-size: 12px; margin-top: 8px; font-weight: 400; }
   </style>
 </head>
 <body>
 
   <div class="overlay" id="txOverlay">
     <div class="overlay-box">
-      <div id="txMsg">awaiting transaction...</div>
-      <div style="color:#666; font-size:12px; margin-top:8px;">confirm in wallet</div>
+      <div id="txMsg">Awaiting transaction...</div>
+      <div class="sub">Confirm in wallet</div>
     </div>
   </div>
 
   <div id="app">
-    <pre class="logo"> _                                  _
-| | ___ _ __ ___   ___  _ __   __ _| | ___
-| |/ _ \ '_ ` _ \ / _ \| '_ \ / _` | |/ _ \
-| |  __/ | | | | | (_) | | | | (_| |_|  __/
-|_|\___|_| |_| |_|\___/|_| |_|\__,_(_)\___|</pre>
-    <div class="sub">hold 1,000 $VV on base to play &middot; actions burn real tokens</div>
-
-    <div class="bar">
+    <header>
       <div>
-        <span id="netWarn" class="warn">[!] WRONG NETWORK </span>
-        <span class="f">bal: <span class="vh" id="bal">-</span></span>
-        &nbsp;
-        <span class="f">addr: <span class="v" id="addr">disconnected</span></span>
+        <h1>Lemonade Stand</h1>
+        <p>burn $VV to run a lemonade stand on base</p>
       </div>
-      <div class="btns">
-        <button class="conn" id="connectBtn" onclick="connectWallet()">connect</button>
+      <div class="hdr-btns">
+        <button class="btn-connect" id="connectBtn" onclick="connectWallet()">Connect</button>
         <a href="https://zora.co/visualizevalue" target="_blank" style="text-decoration:none">
-          <button style="color:#555">buy $vv</button>
+          <button>Buy $VV</button>
         </a>
       </div>
+    </header>
+
+    <div class="panel status">
+      <span id="netWarn" class="warn">Wrong Network</span>
+      <span>bal: <span class="gold" id="bal">-</span></span>
+      <span>addr: <span class="val" id="addr">disconnected</span></span>
     </div>
 
-    <div class="gate" id="gate">
-      connect a wallet with <strong>1,000 $VV</strong> on base to play.
+    <div class="panel gate" id="gate">
+      Hold <strong>1,000 $VV</strong> on Base to play.
     </div>
 
     <div class="stats">
       <div class="stat">
-        <div class="label">cash</div>
-        <div class="val cash" id="cash">$5.00</div>
-      </div>
-      <div class="stat">
-        <div class="label">lemons</div>
+        <div class="label">Lemons</div>
         <div class="val" id="lemons">0</div>
       </div>
       <div class="stat">
-        <div class="label">cups sold</div>
+        <div class="label">Cups Sold</div>
         <div class="val" id="cups">0</div>
       </div>
       <div class="stat">
-        <div class="label">$vv burned</div>
-        <div class="val" style="color:#640" id="burned">0.00</div>
+        <div class="label">$VV Burned</div>
+        <div class="val gold" id="burned">0.00</div>
       </div>
     </div>
 
-    <div class="weather" id="weather">weather: -- | demand: --</div>
+    <div class="weather" id="weather">Weather: -- &nbsp; Demand: --</div>
 
     <div class="actions">
       <button onclick="buyLemons()" id="buyBtn" disabled>
-        buy 10 lemons ($2.00)
-        <span class="vv">burns 0.10 $VV</span>
+        Buy 10 Lemons<span class="vv-tag">0.10 $VV</span>
       </button>
-      <button class="run" onclick="runStand()" id="runBtn" disabled>
-        &gt; run stand _
-        <span class="vv" style="color:#194">burns 0.10 $VV</span>
+      <button class="run-btn" onclick="runStand()" id="runBtn" disabled>
+        Run Stand<span class="vv-tag" style="color:rgba(255,255,255,0.5)">0.10 $VV</span>
       </button>
       <div class="cd" id="cooldown"></div>
     </div>
 
-    <div class="section">
-      <h2>// upgrades</h2>
-      <div id="upgrades"><div style="color:#444">connect wallet to play.</div></div>
+    <div class="panel">
+      <h2>Upgrades</h2>
+      <div id="upgrades"><div style="color:var(--muted)">Connect wallet to play.</div></div>
     </div>
 
-    <div class="section">
-      <h2>// log</h2>
-      <div id="log"><div class="log-entry">waiting for first shift...</div></div>
+    <div class="panel">
+      <h2>Log</h2>
+      <div id="log"><div class="log-entry">Waiting for first shift...</div></div>
     </div>
   </div>
 
