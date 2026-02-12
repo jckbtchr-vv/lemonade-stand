@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Lemonade Stand – Base</title>
+  <title>LEMONADE.EXE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap"
-    rel="stylesheet"
-  />
   <style>
+    @font-face {
+      font-family: 'Terminal';
+      src: local('Courier New'), local('Lucida Console'), local('monospace');
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -18,662 +17,801 @@
     }
 
     body {
-      font-family: "Space Mono", "Courier New", monospace;
-      background: #000;
-      color: #fff;
+      font-family: 'Courier New', 'Lucida Console', monospace;
+      background: #0a0a0a;
+      color: #b0b0b0;
       min-height: 100vh;
-      padding: 20px;
-      transition: background 0.5s ease;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    /* CRT scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.15) 2px,
+        rgba(0,0,0,0.15) 4px
+      );
+      z-index: 9999;
+    }
+
+    ::selection {
+      background: #33ff33;
+      color: #000;
     }
 
     .game-container {
-      max-width: 1200px;
+      max-width: 1100px;
       margin: 0 auto;
-      border: 1px solid #333;
-      padding: 20px;
     }
 
-    /* Top Bar: Wallet & Status */
+    /* ── ASCII Box Drawing ── */
+    .ascii-box {
+      border: 1px solid #333;
+      position: relative;
+      margin-bottom: 8px;
+    }
+
+    .ascii-box::before {
+      content: attr(data-title);
+      position: absolute;
+      top: -1px;
+      left: 8px;
+      background: #0a0a0a;
+      padding: 0 6px;
+      color: #33ff33;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .ascii-box-inner {
+      padding: 14px 12px 10px;
+    }
+
+    /* ── Header / Logo ── */
+    .header {
+      text-align: center;
+      padding: 8px 0;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #222;
+    }
+
+    .ascii-logo {
+      color: #cccc00;
+      font-size: 11px;
+      line-height: 1.15;
+      white-space: pre;
+      display: inline-block;
+      text-align: left;
+    }
+
+    .header-sub {
+      color: #555;
+      font-size: 11px;
+      margin-top: 4px;
+      letter-spacing: 1px;
+    }
+
+    /* ── Top Bar ── */
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #333;
-      padding-bottom: 16px;
-      margin-bottom: 20px;
+      padding: 6px 0;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #222;
       flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .header-info h1 {
-      font-size: 1.4rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      line-height: 1;
-    }
-
-    .header-info p {
-      font-size: 0.7rem;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 6px;
+      gap: 8px;
     }
 
     .wallet-controls {
       display: flex;
       align-items: center;
-      gap: 16px;
-      font-size: 0.7rem;
+      gap: 12px;
+      font-size: 11px;
+      flex-wrap: wrap;
     }
 
-    .wallet-stat {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
+    .wallet-field {
+      color: #666;
     }
 
-    .wallet-stat span:first-child {
-      color: #888;
-      font-size: 0.6rem;
-      text-transform: uppercase;
+    .wallet-field .val {
+      color: #b0b0b0;
     }
 
-    .wallet-stat span:last-child {
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .panel {
-      border: 1px solid #333;
-      padding: 16px;
-      background: #000;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .panel h2 {
-      font-size: 0.8rem;
-      color: #ffff00;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 1px solid #333;
-      padding-bottom: 6px;
-      margin-bottom: 10px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .stat {
-      border: 1px solid #333;
-      padding: 8px;
-      text-align: left;
-      background: #000;
-    }
-
-    .stat-value {
-      display: block;
-      font-size: 1rem;
-      font-weight: 700;
-    }
-
-    .stat-label {
-      font-size: 0.65rem;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .actions {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    button {
-      background: #1a1a1a;
-      color: #fff;
-      border: 1px solid #333;
-      padding: 8px 16px;
-      font-family: "Space Mono", "Courier New", monospace;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-    }
-
-    button.primary {
-      border-color: #ffff00;
-    }
-
-    button:hover:not(:disabled) {
-      background: #2a2a2a;
-      border-color: #ffff00;
-    }
-
-    button:disabled {
-      background: #050505;
-      color: #555;
-      border-color: #222;
-      cursor: not-allowed;
-    }
-
-    .variables-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .variable-card {
-      border: 1px solid #333;
-      padding: 8px;
-      background: #0a0a0a;
-    }
-
-    .variable-label {
-      font-size: 0.6rem;
-      color: #888;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .variable-value {
-      font-size: 0.9rem;
-      color: #fff;
+    .wallet-field .val-highlight {
+      color: #cccc00;
     }
 
     .warning {
-      color: #ff8888;
-      border: 1px solid #ff4444;
-      padding: 4px 8px;
-      font-size: 0.7rem;
+      color: #ff4444;
+      font-size: 11px;
     }
 
-    .disclaimer {
-      margin-top: 10px;
-      padding: 6px 8px;
+    /* ── Grid Layout ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* ── Buttons ── */
+    button, .btn {
+      background: #111;
+      color: #888;
       border: 1px solid #333;
-      color: #aaa;
-      font-size: 0.65rem;
-      line-height: 1.3;
+      padding: 5px 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.1s;
     }
 
+    button:hover:not(:disabled) {
+      background: #1a1a1a;
+      color: #33ff33;
+      border-color: #33ff33;
+    }
+
+    button:disabled {
+      background: #080808;
+      color: #333;
+      border-color: #1a1a1a;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      color: #33ff33;
+      border-color: #33ff33;
+    }
+
+    button.primary:hover:not(:disabled) {
+      background: #0a1a0a;
+    }
+
+    button.connect-btn {
+      color: #cccc00;
+      border-color: #cccc00;
+    }
+
+    button.connect-btn:hover {
+      background: #1a1a00;
+    }
+
+    button.buy-vv {
+      color: #555;
+      border-color: #333;
+    }
+
+    /* ── Stats ── */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      font-size: 11px;
+    }
+
+    .stat-item .label {
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-item .value {
+      color: #b0b0b0;
+      font-weight: bold;
+    }
+
+    .stat-item .value-cash {
+      color: #cccc00;
+    }
+
+    .stat-item .value-green {
+      color: #33ff33;
+    }
+
+    /* ── Inventory ── */
+    .inv-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .inv-item {
+      border: 1px solid #222;
+      padding: 6px;
+      text-align: center;
+      background: #080808;
+    }
+
+    .inv-item .inv-label {
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .inv-item .inv-val {
+      font-size: 14px;
+      color: #b0b0b0;
+      margin: 2px 0;
+    }
+
+    .inv-item button {
+      width: 100%;
+      padding: 3px;
+      font-size: 10px;
+    }
+
+    /* ── Variables ── */
+    .var-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .var-item {
+      font-size: 11px;
+      padding: 4px 6px;
+      border: 1px solid #1a1a1a;
+      background: #080808;
+    }
+
+    .var-item .var-label {
+      color: #444;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .var-item .var-val {
+      color: #888;
+    }
+
+    /* ── Gate Message ── */
+    .gate-msg {
+      border: 1px solid #333;
+      padding: 8px;
+      color: #666;
+      font-size: 11px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .gate-msg strong {
+      color: #cccc00;
+    }
+
+    /* ── Run Button ── */
+    .run-area {
+      margin-bottom: 8px;
+    }
+
+    .run-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      color: #33ff33;
+      border-color: #33ff33;
+      background: #0a0a0a;
+      letter-spacing: 3px;
+    }
+
+    .run-btn:hover:not(:disabled) {
+      background: #0a1a0a;
+      box-shadow: 0 0 8px rgba(51, 255, 51, 0.15);
+    }
+
+    .run-btn:disabled {
+      color: #1a3a1a;
+      border-color: #1a3a1a;
+    }
+
+    .cooldown-text {
+      text-align: center;
+      font-size: 10px;
+      color: #444;
+      margin-top: 4px;
+    }
+
+    /* ── Trust Display ── */
+    .trust-row {
+      display: flex;
+      gap: 16px;
+      padding: 6px 8px;
+      border: 1px solid #1a1a1a;
+      margin-bottom: 8px;
+      background: #080808;
+    }
+
+    .trust-item {
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .trust-item .t-label {
+      color: #884488;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .trust-item .t-val {
+      color: #b0b0b0;
+      font-size: 14px;
+    }
+
+    /* ── Compute Section ── */
+    .compute-box {
+      border: 1px solid #1a1a1a;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #080808;
+    }
+
+    .compute-box h3 {
+      font-size: 10px;
+      color: #336666;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .resource-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .resource-row .r-label {
+      color: #555;
+      min-width: 80px;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .ascii-bar {
+      flex: 1;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #336666;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .resource-row .r-val {
+      color: #666;
+      min-width: 70px;
+      text-align: right;
+      font-size: 11px;
+    }
+
+    .compute-btns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .compute-btns button {
+      font-size: 10px;
+      padding: 6px 4px;
+      color: #336666;
+      border-color: #1a3333;
+    }
+
+    .compute-btns button:hover:not(:disabled) {
+      color: #44aaaa;
+      border-color: #44aaaa;
+      background: #0a1515;
+    }
+
+    .compute-btns .cost {
+      display: block;
+      color: #333;
+      font-size: 9px;
+      margin-top: 2px;
+    }
+
+    /* ── Upgrades / Operations ── */
     .upgrade-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       overflow-y: auto;
-      max-height: 250px;
+      max-height: 280px;
     }
 
     .upgrade-item {
-      border: 1px solid #333;
-      padding: 10px;
-      background: #0a0a0a;
+      border: 1px solid #1a1a1a;
+      padding: 8px;
+      background: #080808;
     }
 
     .upgrade-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .upgrade-name {
-      font-weight: 700;
-      font-size: 0.85rem;
-      color: #fff;
+      color: #888;
+      font-size: 12px;
+    }
+
+    .upgrade-cost {
+      color: #555;
+      font-size: 11px;
     }
 
     .upgrade-desc {
-      font-size: 0.7rem;
-      color: #888;
+      color: #444;
+      font-size: 10px;
+      margin-bottom: 6px;
+    }
+
+    .upgrade-item button {
+      width: 100%;
+      font-size: 10px;
+    }
+
+    /* ── Projects ── */
+    .projects-box {
+      border: 1px solid #1a1a1a;
+      padding: 8px;
+      margin-top: 8px;
+      background: #080808;
+    }
+
+    .projects-box h3 {
+      font-size: 10px;
+      color: #884488;
+      text-transform: uppercase;
+      letter-spacing: 2px;
       margin-bottom: 8px;
     }
 
-    .bottom-row {
-      margin-top: 16px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
+    .project-item {
+      border: 1px solid #1a1a1a;
+      padding: 8px;
+      margin-bottom: 6px;
+      background: #050505;
     }
 
-    .chart-container {
-      border: 1px solid #333;
-      background: #000;
+    .project-item.affordable {
+      border-color: #553355;
+    }
+
+    .project-name {
+      color: #888;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .project-desc {
+      color: #444;
+      font-size: 10px;
+      margin: 2px 0;
+    }
+
+    .project-cost {
+      color: #663366;
+      font-size: 10px;
+      margin-bottom: 6px;
+    }
+
+    .project-item button {
+      width: 100%;
+      font-size: 10px;
+      color: #884488;
+      border-color: #442244;
+    }
+
+    .project-item button:hover:not(:disabled) {
+      color: #bb66bb;
+      border-color: #bb66bb;
+      background: #1a0a1a;
+    }
+
+    /* ── Franchise Section ── */
+    .franchise-box {
+      border: 1px solid #1a1a1a;
+      padding: 8px;
+      margin-top: 8px;
+      background: #080808;
+    }
+
+    .franchise-box h3 {
+      font-size: 10px;
+      color: #228822;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .franchise-box button {
+      color: #228822;
+      border-color: #1a3a1a;
+    }
+
+    .franchise-box button:hover:not(:disabled) {
+      color: #33ff33;
+      border-color: #33ff33;
+      background: #0a150a;
+    }
+
+    /* ── Singularity ── */
+    .singularity-box {
+      border: 1px solid #331111;
       padding: 10px;
-      height: 100%;
+      margin-top: 8px;
+      background: #0a0505;
+    }
+
+    .singularity-box h3 {
+      font-size: 10px;
+      color: #aa3333;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .sing-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .sing-stat {
+      text-align: center;
+      padding: 6px;
+      border: 1px solid #221111;
+    }
+
+    .sing-stat .s-label {
+      font-size: 9px;
+      color: #553333;
+      text-transform: uppercase;
+    }
+
+    .sing-stat .s-val {
+      font-size: 13px;
+      color: #aa3333;
+    }
+
+    .probe-btn {
+      width: 100%;
+      padding: 10px;
+      color: #aa3333;
+      border-color: #551111;
+      font-size: 11px;
+    }
+
+    .probe-btn:hover:not(:disabled) {
+      background: #1a0505;
+      color: #ff4444;
+      border-color: #ff4444;
+    }
+
+    .probe-btn .probe-cost {
+      display: block;
+      font-size: 9px;
+      color: #442222;
+      margin-top: 2px;
+    }
+
+    /* ── Chart ── */
+    .chart-box {
+      border: 1px solid #1a1a1a;
+      padding: 8px;
+      margin-top: 8px;
+      background: #080808;
+    }
+
+    .chart-box h3 {
+      font-size: 10px;
+      color: #33ff33;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
     }
 
     #plChart {
       width: 100%;
-      height: 140px;
+      height: 100px;
       display: block;
-      background: #111;
+      background: #050505;
     }
 
+    .chart-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 6px;
+      font-size: 10px;
+      color: #444;
+    }
+
+    .chart-stats .val {
+      color: #666;
+    }
+
+    /* ── Shift Reports ── */
     .report-log {
-      margin-top: 16px;
+      margin-top: 8px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      max-height: 200px;
+      gap: 6px;
+      max-height: 180px;
       overflow-y: auto;
-      border-top: 1px solid #333;
-      padding-top: 16px;
     }
 
     .report-card {
-      border: 1px solid #333;
-      background: #0a0a0a;
-      padding: 12px;
-      font-size: 0.8rem;
+      border: 1px solid #1a1a1a;
+      background: #080808;
+      padding: 8px;
+      font-size: 11px;
     }
 
     .report-header {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 8px;
-      font-weight: 700;
-      color: #ffff00;
+      margin-bottom: 4px;
+      color: #555;
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      font-size: 0.7rem;
     }
 
     .report-body {
-      color: #ccc;
-      line-height: 1.4;
-      margin-bottom: 8px;
+      color: #666;
+      margin-bottom: 6px;
+      font-size: 11px;
     }
 
     .report-metrics {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      border-top: 1px solid #333;
-      padding-top: 8px;
-      font-size: 0.7rem;
-      color: #888;
+      gap: 6px;
+      border-top: 1px solid #1a1a1a;
+      padding-top: 4px;
+      font-size: 10px;
+      color: #444;
     }
 
     .report-metric span {
       display: block;
-      color: #fff;
-      font-weight: 700;
+      color: #777;
     }
 
     .market-event {
-      margin-top: 8px;
-      padding: 6px;
-      background: #111;
-      border: 1px solid #444;
-      color: #00ff00;
-      font-size: 0.7rem;
+      margin-top: 6px;
+      padding: 4px 6px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      color: #33ff33;
+      font-size: 10px;
       text-transform: uppercase;
     }
 
     .muted {
-      color: #777;
-      font-size: 0.7rem;
+      color: #444;
+      font-size: 11px;
     }
 
-    /* Inventory Specific */
-    .inventory-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .inventory-card {
-      border: 1px solid #333;
-      padding: 8px;
-      background: #0a0a0a;
-      text-align: center;
-    }
-
-    .inventory-label {
-      font-size: 0.6rem;
-      color: #888;
+    /* ── Phase Indicator ── */
+    .phase-ind {
+      font-size: 10px;
+      color: #444;
       text-transform: uppercase;
-      margin-bottom: 2px;
-    }
-
-    .inventory-value {
-      font-size: 0.9rem;
-      font-weight: bold;
-      color: #fff;
+      letter-spacing: 2px;
       margin-bottom: 6px;
     }
 
-    .buy-btn {
-      width: 100%;
-      padding: 4px;
-      font-size: 0.65rem;
-      background: #222;
-      border: 1px solid #444;
-    }
-
-    .buy-btn:hover:not(:disabled) {
-      background: #333;
-      border-color: #ffff00;
-    }
-
-    /* === NEW PAPERCLIP-STYLE UI === */
-
-    /* Compute Section */
-    .compute-section {
-      margin-top: 16px;
-      border: 1px solid #444;
-      padding: 12px;
-      background: #0a0a0a;
-    }
-
-    .compute-section h3 {
-      font-size: 0.7rem;
-      color: #00ffff;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-
-    .resource-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .resource-bar-label {
-      font-size: 0.65rem;
-      color: #888;
-      min-width: 100px;
-    }
-
-    .resource-bar-track {
-      flex: 1;
-      height: 12px;
-      background: #222;
-      border: 1px solid #444;
-      position: relative;
-    }
-
-    .resource-bar-fill {
-      height: 100%;
-      background: #00ffff;
-      transition: width 0.1s ease;
-    }
-
-    .resource-bar-value {
-      font-size: 0.7rem;
-      min-width: 80px;
-      text-align: right;
-    }
-
-    .compute-buttons {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .compute-btn {
-      padding: 8px;
-      font-size: 0.65rem;
-      background: #111;
-      border: 1px solid #00ffff;
-      color: #00ffff;
-    }
-
-    .compute-btn:hover:not(:disabled) {
-      background: #002222;
-    }
-
-    .compute-btn .cost {
+    /* ── Token Cost Indicator ── */
+    .token-cost-tag {
+      font-size: 9px;
+      color: #664400;
       display: block;
-      font-size: 0.6rem;
-      color: #666;
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
-    /* Trust & Resources */
-    .trust-display {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 16px;
-      padding: 8px;
-      border: 1px solid #ff00ff;
-      background: #0a000a;
-    }
-
-    .trust-item {
-      text-align: center;
-    }
-
-    .trust-label {
-      font-size: 0.6rem;
-      color: #ff00ff;
-      text-transform: uppercase;
-    }
-
-    .trust-value {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    /* Projects Section */
-    .projects-section {
-      margin-top: 16px;
-      border: 1px solid #ff00ff;
-      padding: 12px;
-      background: #0a000a;
-    }
-
-    .projects-section h3 {
-      font-size: 0.7rem;
-      color: #ff00ff;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-
-    .project-item {
-      border: 1px solid #333;
-      padding: 10px;
-      background: #050505;
-      margin-bottom: 8px;
-    }
-
-    .project-item.affordable {
-      border-color: #ff00ff;
-    }
-
-    .project-header {
-      margin-bottom: 4px;
-    }
-
-    .project-name {
-      font-weight: 700;
-      font-size: 0.8rem;
-      color: #fff;
-    }
-
-    .project-desc {
-      font-size: 0.7rem;
-      color: #888;
-      margin-bottom: 4px;
-    }
-
-    .project-cost {
-      font-size: 0.65rem;
-      color: #ff00ff;
-      margin-bottom: 8px;
-    }
-
-    .project-item button {
-      width: 100%;
-      background: #1a001a;
-      border-color: #ff00ff;
-    }
-
-    .project-item button:hover:not(:disabled) {
-      background: #2a002a;
-    }
-
-    /* Narrative Overlay */
+    /* ── Narrative Overlay ── */
     #narrativeContainer {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0, 0, 0, 0.95);
       z-index: 1000;
-      display: none;
       align-items: center;
       justify-content: center;
     }
 
     .narrative-card {
-      max-width: 500px;
-      padding: 30px;
-      border: 2px solid #ffff00;
+      max-width: 460px;
+      padding: 24px;
+      border: 1px solid #33ff33;
       background: #0a0a0a;
       text-align: center;
     }
 
     .narrative-title {
-      font-size: 1.2rem;
-      color: #ffff00;
+      font-size: 14px;
+      color: #33ff33;
       text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 20px;
+      letter-spacing: 4px;
+      margin-bottom: 16px;
     }
 
     .narrative-messages p {
-      color: #ccc;
+      color: #777;
       line-height: 1.6;
-      margin-bottom: 12px;
-      font-size: 0.85rem;
+      margin-bottom: 10px;
+      font-size: 12px;
     }
 
     .narrative-card button {
-      margin-top: 20px;
-      padding: 12px 30px;
-      border-color: #ffff00;
-    }
-
-    /* Singularity Section */
-    .singularity-section {
       margin-top: 16px;
-      border: 2px solid #ff4444;
-      padding: 16px;
-      background: #0a0000;
+      padding: 8px 24px;
+      color: #33ff33;
+      border-color: #33ff33;
     }
 
-    .singularity-section h3 {
-      font-size: 0.8rem;
-      color: #ff4444;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 12px;
+    /* ── TX Pending Overlay ── */
+    .tx-pending {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 500;
+      display: none;
+      align-items: center;
+      justify-content: center;
     }
 
-    .singularity-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-
-    .singularity-stat {
+    .tx-pending-inner {
+      border: 1px solid #cccc00;
+      padding: 20px 30px;
+      background: #0a0a0a;
       text-align: center;
-      padding: 10px;
-      border: 1px solid #ff4444;
-      background: #050000;
-    }
-
-    .singularity-stat .label {
-      font-size: 0.6rem;
-      color: #ff4444;
+      color: #cccc00;
+      font-size: 12px;
+      letter-spacing: 2px;
       text-transform: uppercase;
     }
 
-    .singularity-stat .value {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #fff;
-      margin-top: 4px;
+    .tx-pending-inner .spinner {
+      margin-top: 8px;
+      color: #666;
+      font-size: 11px;
     }
 
-    .probe-button {
-      margin-top: 12px;
-      width: 100%;
-      padding: 12px;
-      background: #200000;
-      border: 1px solid #ff4444;
-      color: #ff4444;
-      font-size: 0.8rem;
-    }
-
-    .probe-button:hover:not(:disabled) {
-      background: #300000;
-    }
-
-    /* Phase indicator */
-    .phase-indicator {
-      font-size: 0.6rem;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 4px 8px;
-      border: 1px solid #333;
-      display: inline-block;
-      margin-bottom: 12px;
-    }
-
+    /* ── Responsive ── */
     @media (max-width: 800px) {
-      .top-bar {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .wallet-controls {
-        width: 100%;
-        justify-content: space-between;
-        flex-wrap: wrap;
-      }
-      .grid {
-        grid-template-columns: 1fr;
-      }
-      .variables-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-      .inventory-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-      .compute-buttons {
-        grid-template-columns: 1fr;
-      }
-      .singularity-stats {
-        grid-template-columns: 1fr;
-      }
+      .top-bar { flex-direction: column; align-items: flex-start; }
+      .wallet-controls { width: 100%; flex-wrap: wrap; }
+      .grid { grid-template-columns: 1fr; }
+      .var-grid { grid-template-columns: 1fr 1fr; }
+      .inv-grid { grid-template-columns: 1fr 1fr; }
+      .compute-btns { grid-template-columns: 1fr; }
+      .sing-stats { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -681,251 +819,247 @@
   <!-- Narrative Overlay -->
   <div id="narrativeContainer"></div>
 
+  <!-- TX Pending Overlay -->
+  <div class="tx-pending" id="txPending">
+    <div class="tx-pending-inner">
+      Awaiting transaction...<br>
+      <span class="spinner" id="txSpinner">confirm in wallet</span>
+    </div>
+  </div>
+
   <div class="game-container">
-    <!-- Top Bar -->
+    <!-- Header -->
+    <div class="header">
+      <pre class="ascii-logo">
+ _                                    _
+| |___ _ __  ___ _ _  __ _ __| |___
+| / -_) '  \/ _ \ ' \/ _` / _` / -_)
+|_\___|_|_|_\___/_||_\__,_\__,_\___|
+       .  e  x  e            v0.2</pre>
+      <div class="header-sub">hold 1,000 $LEMON on base to play &middot; all actions cost real tokens</div>
+    </div>
+
+    <!-- Top Bar: Wallet -->
     <div class="top-bar">
-      <div class="header-info">
-        <h1 class="title">Lemonade Stand</h1>
-        <p class="subtitle">Hold 1,000 LEMON on Base to play (simulation).</p>
-      </div>
-
       <div class="wallet-controls">
-        <div id="networkWarning" class="warning" style="display: none;">
-          Wrong Net (Use Base)
-        </div>
-
-        <div class="wallet-stat">
-          <span>Cost (1k VV)</span>
-          <span id="costToPlay" style="color: #ffff00;">-</span>
-        </div>
-
-        <div class="wallet-stat">
-          <span>Balance</span>
-          <span id="tokenBalance">-</span>
-        </div>
-
-        <div class="wallet-stat">
-          <span>Address</span>
-          <span id="walletAddress">Not Connected</span>
-        </div>
-
-        <div>
-          <button id="connectWalletButton" onclick="connectWallet()">Connect</button>
-          <a href="https://zora.co/visualizevalue" target="_blank" style="text-decoration: none;">
-            <button style="border-color:#444; background:#111;">Buy $VV</button>
-          </a>
-        </div>
+        <span id="networkWarning" class="warning" style="display:none;">[!] WRONG NETWORK</span>
+        <span class="wallet-field">cost(1k): <span class="val-highlight" id="costToPlay">-</span></span>
+        <span class="wallet-field">bal: <span class="val" id="tokenBalance">-</span></span>
+        <span class="wallet-field">addr: <span class="val" id="walletAddress">disconnected</span></span>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="connect-btn" id="connectWalletButton" onclick="connectWallet()">CONNECT</button>
+        <a href="https://zora.co/visualizevalue" target="_blank" style="text-decoration:none;">
+          <button class="buy-vv">BUY $VV</button>
+        </a>
       </div>
     </div>
 
     <div class="grid">
-      <!-- Left: Simulation + Variables -->
-      <div class="panel">
-        <div class="phase-indicator">Phase: <span id="currentPhase">Street Stand</span></div>
-        <h2 id="tierTitle">Street Stand</h2>
+      <!-- ═══ LEFT PANEL ═══ -->
+      <div>
+        <div class="phase-ind">phase: <span id="currentPhase">street stand</span></div>
 
-        <p class="muted" id="weatherText" style="margin-bottom: 12px;">
-          Weather: unknown · Demand: waiting...
-        </p>
-
-        <div id="gateMessage" class="disclaimer" style="margin-bottom: 16px;">
-          Connect a wallet holding at least <strong>1,000 LEMON</strong> on the Base
-          network to play.
+        <div id="gateMessage" class="gate-msg">
+          connect a wallet holding at least <strong>1,000 LEMON</strong> on base to play.
         </div>
 
-        <!-- Trust & Resources Display -->
-        <div class="trust-display">
+        <!-- Trust & Resources -->
+        <div class="trust-row">
           <div class="trust-item">
-            <div class="trust-label">Trust</div>
-            <div class="trust-value" id="trustCount">0</div>
+            <div class="t-label">trust</div>
+            <div class="t-val" id="trustCount">0</div>
           </div>
           <div class="trust-item">
-            <div class="trust-label">Total Cups</div>
-            <div class="trust-value" id="totalCupsEver">0</div>
+            <div class="t-label">total cups</div>
+            <div class="t-val" id="totalCupsEver">0</div>
           </div>
-          <div class="trust-item" id="creativityDisplay" style="display: none;">
-            <div class="trust-label">Creativity</div>
-            <div class="trust-value" id="creativityCount">0</div>
-          </div>
-        </div>
-
-        <div class="stats" id="gameStats">
-          <div class="stat">
-            <span class="stat-value" id="cash">$10.00</span>
-            <span class="stat-label">CASH</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value" id="cups">0</span>
-            <span class="stat-label">CUPS SOLD</span>
+          <div class="trust-item" id="creativityDisplay" style="display:none;">
+            <div class="t-label">creativity</div>
+            <div class="t-val" id="creativityCount">0</div>
           </div>
         </div>
 
-        <!-- Inventory Grid -->
-        <div class="inventory-grid" id="inventoryGrid">
-          <div class="inventory-card">
-            <div class="inventory-label">Lemons</div>
-            <div class="inventory-value" id="invLemons">0</div>
-            <button class="buy-btn" onclick="buyIngredient('lemons')">Buy 5 ($2.50)</button>
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-item">
+            <span class="label">CASH </span>
+            <span class="value value-cash" id="cash">$10.00</span>
           </div>
-          <div class="inventory-card">
-            <div class="inventory-label">Sugar</div>
-            <div class="inventory-value" id="invSugar">0</div>
-            <button class="buy-btn" onclick="buyIngredient('sugar')">Buy 5 ($1.00)</button>
+          <div class="stat-item">
+            <span class="label">CUPS </span>
+            <span class="value" id="cups">0</span>
           </div>
-          <div class="inventory-card">
-            <div class="inventory-label">Ice</div>
-            <div class="inventory-value" id="invIce">0</div>
-            <button class="buy-btn" onclick="buyIngredient('ice')">Buy 5 ($0.50)</button>
-          </div>
-          <div class="inventory-card">
-            <div class="inventory-label">Cups</div>
-            <div class="inventory-value" id="invCups">0</div>
-            <button class="buy-btn" onclick="buyIngredient('cups')">Buy 5 ($0.50)</button>
+          <div class="stat-item">
+            <span class="label">TOKENS SPENT </span>
+            <span class="value" style="color:#664400;" id="tokensSpent">0.00</span>
           </div>
         </div>
 
-        <!-- Active Variables Grid -->
-        <div class="variables-grid">
-          <div class="variable-card">
-            <div class="variable-label">Price/Cup</div>
-            <div class="variable-value" id="varPrice">$0.50</div>
+        <!-- Inventory -->
+        <div class="inv-grid" id="inventoryGrid">
+          <div class="inv-item">
+            <div class="inv-label">lemons</div>
+            <div class="inv-val" id="invLemons">0</div>
+            <button onclick="buyIngredient('lemons')">+5 ($2.50)<span class="token-cost-tag">0.25 LEMON</span></button>
           </div>
-          <div class="variable-card">
-            <div class="variable-label">Cost/Cup</div>
-            <div class="variable-value" id="varCost">$0.20</div>
+          <div class="inv-item">
+            <div class="inv-label">sugar</div>
+            <div class="inv-val" id="invSugar">0</div>
+            <button onclick="buyIngredient('sugar')">+5 ($1.00)<span class="token-cost-tag">0.10 LEMON</span></button>
           </div>
-          <div class="variable-card">
-            <div class="variable-label">Ops Speed</div>
-            <div class="variable-value" id="varOps">1.0x</div>
+          <div class="inv-item">
+            <div class="inv-label">ice</div>
+            <div class="inv-val" id="invIce">0</div>
+            <button onclick="buyIngredient('ice')">+5 ($0.50)<span class="token-cost-tag">0.05 LEMON</span></button>
           </div>
-          <div class="variable-card">
-            <div class="variable-label">Hype</div>
-            <div class="variable-value" id="varHype">1.0x</div>
+          <div class="inv-item">
+            <div class="inv-label">cups</div>
+            <div class="inv-val" id="invCups">0</div>
+            <button onclick="buyIngredient('cups')">+5 ($0.50)<span class="token-cost-tag">0.05 LEMON</span></button>
           </div>
         </div>
 
-        <div class="actions">
-          <button
-            id="runButton"
-            class="primary"
-            onclick="runStand()"
-            disabled
-            style="width: 100%; padding: 16px; font-size: 1rem;"
-          >
-            Run Stand
+        <!-- Variables -->
+        <div class="var-grid">
+          <div class="var-item">
+            <div class="var-label">price/cup</div>
+            <div class="var-val" id="varPrice">$0.50</div>
+          </div>
+          <div class="var-item">
+            <div class="var-label">cost/cup</div>
+            <div class="var-val" id="varCost">dynamic</div>
+          </div>
+          <div class="var-item">
+            <div class="var-label">ops speed</div>
+            <div class="var-val" id="varOps">1.0x</div>
+          </div>
+          <div class="var-item">
+            <div class="var-label">hype</div>
+            <div class="var-val" id="varHype">1.0x</div>
+          </div>
+        </div>
+
+        <!-- Weather -->
+        <div style="margin-bottom:8px;">
+          <span class="muted" id="weatherText">weather: unknown &middot; demand: waiting...</span>
+        </div>
+
+        <!-- Run Button -->
+        <div class="run-area">
+          <button id="runButton" class="run-btn" onclick="runStand()" disabled>
+            &gt; RUN STAND _
           </button>
-          <span id="cooldownMessage" class="muted" style="text-align: center; margin-top: 8px;"></span>
+          <div class="cooldown-text" id="cooldownMessage"></div>
         </div>
 
-        <!-- Compute Section (Paperclip-style) -->
-        <div class="compute-section" id="computeSection">
-          <h3>Compute Resources</h3>
+        <!-- Compute Resources -->
+        <div class="compute-box" id="computeSection">
+          <h3>// compute resources</h3>
 
-          <div class="resource-bar">
-            <span class="resource-bar-label">Processing</span>
-            <div class="resource-bar-track">
-              <div class="resource-bar-fill" id="processingBar" style="width: 0%"></div>
-            </div>
-            <span class="resource-bar-value">
-              <span id="processingPower">0</span> / <span id="maxProcessingPower">100</span>
-            </span>
+          <div class="resource-row">
+            <span class="r-label">processing</span>
+            <span class="ascii-bar" id="processingBarAscii">[....................] </span>
+            <span class="r-val"><span id="processingPower">0</span>/<span id="maxProcessingPower">100</span></span>
           </div>
 
-          <div class="compute-buttons">
-            <button class="compute-btn" onclick="buyProcessor()">
-              Processor (<span id="processorCount">0</span>)
+          <div class="compute-btns">
+            <button onclick="buyProcessor()">
+              processor (<span id="processorCount">0</span>)
               <span class="cost" id="processorCost">$50.00</span>
+              <span class="token-cost-tag">0.50 LEMON</span>
             </button>
-            <button class="compute-btn" onclick="buyMemory()">
-              Memory (<span id="memoryCount">0</span>)
+            <button onclick="buyMemory()">
+              memory (<span id="memoryCount">0</span>)
               <span class="cost" id="memoryCost">$100.00</span>
+              <span class="token-cost-tag">1.00 LEMON</span>
             </button>
-            <button class="compute-btn" onclick="buyAutoWorker()">
-              Auto-Worker (<span id="autoWorkerCount">0</span>)
+            <button onclick="buyAutoWorker()">
+              auto-worker (<span id="autoWorkerCount">0</span>)
               <span class="cost" id="autoWorkerCost">$100.00</span>
+              <span class="token-cost-tag">1.00 LEMON</span>
             </button>
           </div>
         </div>
 
-        <!-- Shift Intelligence Log -->
-        <div id="shiftReports" class="report-log">
-          <!-- Reports injected here -->
-        </div>
+        <!-- Shift Reports -->
+        <div id="shiftReports" class="report-log"></div>
       </div>
 
-      <!-- Right: Operations, Projects & Upgrades -->
-      <div class="panel">
-        <h2>Operations & Upgrades</h2>
-        <div id="upgradesList" class="upgrade-list">
-          <div class="muted">Connect wallet to load operations.</div>
-        </div>
-
-        <!-- Strategic Projects (unlocked by Trust) -->
-        <div class="projects-section" id="projectsSection" style="display: none;">
-          <h3>Strategic Projects</h3>
-          <p class="muted" style="margin-bottom: 10px;">Spend Trust and resources on breakthrough initiatives.</p>
-          <div id="projectsList" class="upgrade-list">
-            <div class="muted">No projects available.</div>
+      <!-- ═══ RIGHT PANEL ═══ -->
+      <div>
+        <div class="ascii-box" data-title="operations">
+          <div class="ascii-box-inner">
+            <div id="upgradesList" class="upgrade-list">
+              <div class="muted">connect wallet to load operations.</div>
+            </div>
           </div>
         </div>
 
-        <!-- Franchise Section (Phase 2+) -->
-        <div class="compute-section" id="franchiseSection" style="display: none; margin-top: 16px; border-color: #00ff00;">
-          <h3 style="color: #00ff00;">Franchises</h3>
-          <p class="muted">Each franchise generates $5/tick passive income.</p>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-            <span>Owned: <strong id="franchiseCount">0</strong></span>
-            <button class="compute-btn" style="border-color: #00ff00; color: #00ff00;" onclick="buyFranchise()">
-              Buy Franchise
+        <!-- Strategic Projects -->
+        <div class="projects-box" id="projectsSection" style="display:none;">
+          <h3>// strategic projects</h3>
+          <div class="muted" style="margin-bottom:6px;">spend trust & resources on breakthroughs.</div>
+          <div id="projectsList" class="upgrade-list">
+            <div class="muted">no projects available.</div>
+          </div>
+        </div>
+
+        <!-- Franchises -->
+        <div class="franchise-box" id="franchiseSection" style="display:none;">
+          <h3>// franchises</h3>
+          <div class="muted" style="margin-bottom:6px;">each franchise generates $5/tick passive income.</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="muted">owned: <strong id="franchiseCount" style="color:#228822;">0</strong></span>
+            <button onclick="buyFranchise()">
+              buy franchise
               <span class="cost" id="franchiseCost">$10,000</span>
+              <span class="token-cost-tag">10.00 LEMON</span>
             </button>
           </div>
         </div>
 
-        <!-- Singularity Section (Phase 4) -->
-        <div class="singularity-section" id="singularitySection" style="display: none;">
-          <h3>Universal Lemonization</h3>
-          <p class="muted" style="margin-bottom: 12px;">The AI has awakened. It seeks to optimize... everything.</p>
+        <!-- Singularity -->
+        <div class="singularity-box" id="singularitySection" style="display:none;">
+          <h3>// universal lemonization</h3>
+          <div class="muted" style="margin-bottom:8px;">the AI has awakened. it seeks to optimize... everything.</div>
 
-          <div class="singularity-stats">
-            <div class="singularity-stat">
-              <div class="label">Probes Launched</div>
-              <div class="value" id="probeCount">0</div>
+          <div class="sing-stats">
+            <div class="sing-stat">
+              <div class="s-label">probes</div>
+              <div class="s-val" id="probeCount">0</div>
             </div>
-            <div class="singularity-stat">
-              <div class="label">Universal Lemons</div>
-              <div class="value" id="universalLemons">0</div>
+            <div class="sing-stat">
+              <div class="s-label">universal lemons</div>
+              <div class="s-val" id="universalLemons">0</div>
             </div>
-            <div class="singularity-stat">
-              <div class="label">Universe Converted</div>
-              <div class="value" id="universePercentage">0.000000%</div>
+            <div class="sing-stat">
+              <div class="s-label">converted</div>
+              <div class="s-val" id="universePercentage">0.000000%</div>
             </div>
           </div>
 
-          <button class="probe-button" onclick="launchProbe()">
-            Launch Self-Replicating Probe
-            <span style="display: block; font-size: 0.65rem; color: #aa4444; margin-top: 4px;">
-              Cost: $1,000,000,000
-            </span>
+          <button class="probe-btn" onclick="launchProbe()">
+            &gt; launch self-replicating probe
+            <span class="probe-cost">cost: $1,000,000,000 &middot; 100.00 LEMON</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Bottom: P&L -->
-    <div class="bottom-row">
-      <div class="panel chart-container">
-        <h2>P&L (Cumulative Profit)</h2>
-        <canvas id="plChart"></canvas>
-        <div style="margin-top: 8px; display: flex; gap: 16px; font-size: 0.7rem; color: #888;">
-          <span>REV: <span id="totalRevenue" style="color:#fff">$0.00</span></span>
-          <span>COST: <span id="totalCost" style="color:#fff">$0.00</span></span>
-        </div>
+    <!-- Chart -->
+    <div class="chart-box">
+      <h3>// p&amp;l (cumulative)</h3>
+      <canvas id="plChart"></canvas>
+      <div class="chart-stats">
+        <span>rev: <span class="val" id="totalRevenue">$0.00</span></span>
+        <span>cost: <span class="val" id="totalCost">$0.00</span></span>
+        <span>tokens burned: <span class="val" style="color:#664400;" id="totalTokensBurned">0.00</span></span>
       </div>
     </div>
   </div>
 
-  <!-- Ethers.js (v6 UMD build) for wallet + ERC20 balance -->
+  <!-- Ethers.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"
           crossorigin="anonymous"></script>
   <script src="game.js"></script>
