@@ -8,6 +8,8 @@ const TOKEN_ADDRESS = "0xd2969cc475a49e73182ae1c517add57db0f1c2ac";
 const CANVAS_ADDRESS = "0x0000000000000000000000000000000000000000"; // TODO: deploy and update
 const GRID_SIZE = 1000;
 
+const LOCAL_MODE = CANVAS_ADDRESS === "0x0000000000000000000000000000000000000000";
+
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function decimals() view returns (uint8)",
@@ -39,6 +41,14 @@ let totalPixels = 0;
 // Pixel buffer: 1000x1000, 4 bytes per pixel (RGBA)
 const pixelBuffer = new Uint8ClampedArray(GRID_SIZE * GRID_SIZE * 4);
 
+// Off-screen buffer for fast rendering
+const offCanvas = document.createElement("canvas");
+offCanvas.width = GRID_SIZE;
+offCanvas.height = GRID_SIZE;
+const offCtx = offCanvas.getContext("2d");
+let imageData = offCtx.createImageData(GRID_SIZE, GRID_SIZE);
+let bufferDirty = true;
+
 // Viewport
 let viewX = 0;
 let viewY = 0;
@@ -54,15 +64,18 @@ let panStartX = 0;
 let panStartY = 0;
 let panStartViewX = 0;
 let panStartViewY = 0;
+let renderQueued = false;
 
 // --- Canvas Setup -------------------------------------------------------------
 
 const canvas = document.getElementById("grid");
 const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  ctx.imageSmoothingEnabled = false;
   render();
 }
 
@@ -78,6 +91,7 @@ function initBuffer() {
     pixelBuffer[idx + 2] = 0;
     pixelBuffer[idx + 3] = 255;
   }
+  bufferDirty = true;
 }
 
 function setPixel(x, y, r, g, b) {
@@ -86,54 +100,60 @@ function setPixel(x, y, r, g, b) {
   pixelBuffer[idx + 1] = g;
   pixelBuffer[idx + 2] = b;
   pixelBuffer[idx + 3] = 255;
+  bufferDirty = true;
+}
+
+// Sync pixel buffer → off-screen ImageData → off-screen canvas
+function syncBuffer() {
+  if (!bufferDirty) return;
+  imageData.data.set(pixelBuffer);
+  offCtx.putImageData(imageData, 0, 0);
+  bufferDirty = false;
 }
 
 // --- Rendering ----------------------------------------------------------------
 
 function render() {
+  syncBuffer();
+
   const w = canvas.width;
   const h = canvas.height;
 
   ctx.fillStyle = "#111";
   ctx.fillRect(0, 0, w, h);
 
-  const cellSize = zoom;
-  const startCol = Math.floor(viewX);
-  const startRow = Math.floor(viewY);
-  const endCol = Math.min(GRID_SIZE, startCol + Math.ceil(w / cellSize) + 1);
-  const endRow = Math.min(GRID_SIZE, startRow + Math.ceil(h / cellSize) + 1);
+  // Draw the entire grid as a scaled image — fast
+  const srcX = Math.max(0, Math.floor(viewX));
+  const srcY = Math.max(0, Math.floor(viewY));
+  const srcW = Math.min(GRID_SIZE - srcX, Math.ceil(w / zoom) + 1);
+  const srcH = Math.min(GRID_SIZE - srcY, Math.ceil(h / zoom) + 1);
 
-  const offsetX = -(viewX - startCol) * cellSize;
-  const offsetY = -(viewY - startRow) * cellSize;
+  const dstX = (srcX - viewX) * zoom;
+  const dstY = (srcY - viewY) * zoom;
+  const dstW = srcW * zoom;
+  const dstH = srcH * zoom;
 
-  // Draw pixels
-  for (let row = Math.max(0, startRow); row < endRow; row++) {
-    for (let col = Math.max(0, startCol); col < endCol; col++) {
-      const idx = (row * GRID_SIZE + col) * 4;
-      const r = pixelBuffer[idx];
-      const g = pixelBuffer[idx + 1];
-      const b = pixelBuffer[idx + 2];
-
-      const sx = offsetX + (col - startCol) * cellSize;
-      const sy = offsetY + (row - startRow) * cellSize;
-
-      ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.fillRect(sx, sy, cellSize + 0.5, cellSize + 0.5);
-    }
-  }
+  ctx.drawImage(offCanvas, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
 
   // Grid lines at higher zoom
-  if (cellSize >= 8) {
+  if (zoom >= 8) {
+    const startCol = Math.max(0, Math.floor(viewX));
+    const startRow = Math.max(0, Math.floor(viewY));
+    const endCol = Math.min(GRID_SIZE, startCol + Math.ceil(w / zoom) + 1);
+    const endRow = Math.min(GRID_SIZE, startRow + Math.ceil(h / zoom) + 1);
+    const offsetX = (startCol - viewX) * zoom;
+    const offsetY = (startRow - viewY) * zoom;
+
     ctx.strokeStyle = "rgba(255,255,255,0.06)";
     ctx.lineWidth = 0.5;
     ctx.beginPath();
-    for (let col = Math.max(0, startCol); col <= endCol; col++) {
-      const sx = offsetX + (col - startCol) * cellSize;
+    for (let col = startCol; col <= endCol; col++) {
+      const sx = offsetX + (col - startCol) * zoom;
       ctx.moveTo(sx, 0);
       ctx.lineTo(sx, h);
     }
-    for (let row = Math.max(0, startRow); row <= endRow; row++) {
-      const sy = offsetY + (row - startRow) * cellSize;
+    for (let row = startRow; row <= endRow; row++) {
+      const sy = offsetY + (row - startRow) * zoom;
       ctx.moveTo(0, sy);
       ctx.lineTo(w, sy);
     }
@@ -142,20 +162,28 @@ function render() {
 
   // Hover highlight
   if (hoverX >= 0 && hoverX < GRID_SIZE && hoverY >= 0 && hoverY < GRID_SIZE) {
-    const sx = offsetX + (hoverX - startCol) * cellSize;
-    const sy = offsetY + (hoverY - startRow) * cellSize;
+    const sx = (hoverX - viewX) * zoom;
+    const sy = (hoverY - viewY) * zoom;
     ctx.strokeStyle = "#fff";
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(sx, sy, cellSize, cellSize);
+    ctx.strokeRect(sx, sy, zoom, zoom);
   }
+}
+
+function queueRender() {
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(() => {
+    renderQueued = false;
+    render();
+  });
 }
 
 // --- Screen ↔ Grid conversion -------------------------------------------------
 
 function screenToGrid(sx, sy) {
-  const cellSize = zoom;
-  const gx = Math.floor(viewX + sx / cellSize);
-  const gy = Math.floor(viewY + sy / cellSize);
+  const gx = Math.floor(viewX + sx / zoom);
+  const gy = Math.floor(viewY + sy / zoom);
   return [gx, gy];
 }
 
@@ -168,7 +196,7 @@ canvas.addEventListener("mousemove", (e) => {
     viewX = panStartViewX - dx / zoom;
     viewY = panStartViewY - dy / zoom;
     clampView();
-    render();
+    queueRender();
   }
 
   const [gx, gy] = screenToGrid(e.clientX, e.clientY);
@@ -182,12 +210,11 @@ canvas.addEventListener("mousemove", (e) => {
     coordsEl.textContent = "(---, ---)";
   }
 
-  if (!isPanning) render();
+  if (!isPanning) queueRender();
 });
 
 canvas.addEventListener("mousedown", (e) => {
   if (e.button === 1 || e.button === 2 || e.shiftKey) {
-    // Middle click, right click, or shift+click = pan
     isPanning = true;
     panStartX = e.clientX;
     panStartY = e.clientY;
@@ -222,11 +249,10 @@ canvas.addEventListener("wheel", (e) => {
   const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
   zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
 
-  // Keep the grid point under the cursor fixed
   viewX = gxBefore - e.clientX / zoom;
   viewY = gyBefore - e.clientY / zoom;
   clampView();
-  render();
+  queueRender();
 }, { passive: false });
 
 function clampView() {
@@ -292,15 +318,17 @@ async function connectWallet() {
   document.getElementById("address").textContent = shorten(userAddress);
   document.getElementById("connectBtn").textContent = "Disconnect";
 
-  // Check network
   const net = await provider.getNetwork();
   if (net.chainId !== BASE_CHAIN_ID) {
     showStatus("Switch to Base network");
   }
 
   await updateBalance();
-  await loadPixels();
-  listenForPixels();
+
+  if (!LOCAL_MODE) {
+    await loadPixels();
+    listenForPixels();
+  }
 }
 
 function disconnectWallet() {
@@ -326,9 +354,19 @@ async function updateBalance() {
   document.getElementById("balance").textContent = human.toFixed(2) + " LEMON";
 }
 
-// --- On-chain pixel placement -------------------------------------------------
+// --- Pixel Placement ----------------------------------------------------------
 
 async function placePixelOnChain(x, y) {
+  // Local mode — place immediately, no wallet needed
+  if (LOCAL_MODE) {
+    const { r, g, b } = hexToRgb(selectedColor);
+    setPixel(x, y, r, g, b);
+    totalPixels++;
+    document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
+    queueRender();
+    return;
+  }
+
   if (!signer) {
     showStatus("Connect wallet first");
     return;
@@ -359,12 +397,11 @@ async function placePixelOnChain(x, y) {
     const tx = await canvasContract.placePixel(x, y, colorInt);
     await tx.wait();
 
-    // Optimistic update
     const { r, g, b } = hexToRgb(selectedColor);
     setPixel(x, y, r, g, b);
     totalPixels++;
     document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
-    render();
+    queueRender();
 
     showStatus("Pixel placed!");
     await updateBalance();
@@ -381,7 +418,7 @@ async function placePixelOnChain(x, y) {
 // --- Load existing pixels from events -----------------------------------------
 
 async function loadPixels() {
-  if (!provider) return;
+  if (!provider || LOCAL_MODE) return;
   showStatus("Loading canvas...");
 
   try {
@@ -402,7 +439,7 @@ async function loadPixels() {
     });
 
     document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
-    render();
+    queueRender();
     showStatus("");
   } catch (err) {
     console.error("Failed to load pixels:", err);
@@ -411,7 +448,7 @@ async function loadPixels() {
 }
 
 function listenForPixels() {
-  if (!provider) return;
+  if (!provider || LOCAL_MODE) return;
   try {
     const canvasContract = new ethers.Contract(CANVAS_ADDRESS, CANVAS_ABI, provider);
     canvasContract.on("PixelPlaced", (user, x, y, color) => {
@@ -424,7 +461,7 @@ function listenForPixels() {
       setPixel(xi, yi, r, g, b);
       totalPixels++;
       document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
-      render();
+      queueRender();
     });
   } catch (err) {
     console.error("Event listener failed:", err);
@@ -469,6 +506,10 @@ viewX = GRID_SIZE / 2 - window.innerWidth / (2 * zoom);
 viewY = GRID_SIZE / 2 - window.innerHeight / (2 * zoom);
 
 resizeCanvas();
+
+if (LOCAL_MODE) {
+  showStatus("Local mode — click to place pixels");
+}
 
 // Auto-connect if wallet already authorized
 if (window.ethereum && window.ethereum.selectedAddress) {
