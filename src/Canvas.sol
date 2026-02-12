@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function decimals() external view returns (uint8);
 }
 
 contract Canvas {
@@ -30,6 +29,7 @@ contract Canvas {
 
     function placePixels(uint16[] calldata xs, uint16[] calldata ys, uint24[] calldata colors) external {
         uint256 len = xs.length;
+        require(len > 0, "empty");
         require(len == ys.length && len == colors.length, "length mismatch");
         require(token.transferFrom(msg.sender, DEAD, burnAmount * len), "burn failed");
         for (uint256 i = 0; i < len; i++) {

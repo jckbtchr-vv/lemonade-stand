@@ -259,18 +259,14 @@ contract CanvasTest is Test {
         canvas.placePixels(xs, ys, colors);
     }
 
-    function test_placePixels_emptyArrays() public {
+    function test_placePixels_revertsEmptyArrays() public {
         uint16[] memory xs = new uint16[](0);
         uint16[] memory ys = new uint16[](0);
         uint24[] memory colors = new uint24[](0);
 
-        uint256 balBefore = token.balanceOf(alice);
-
         vm.prank(alice);
+        vm.expectRevert("empty");
         canvas.placePixels(xs, ys, colors);
-
-        // No tokens burned
-        assertEq(token.balanceOf(alice), balBefore);
     }
 
     function test_placePixels_singleElement() public {

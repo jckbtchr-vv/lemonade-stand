@@ -40,11 +40,6 @@ let sessionPixels = 0;
 let tokenPriceUsd = 0;
 let tokenMarketCap = 0;
 
-// Heatmap: track overwrite count per pixel
-const heatmap = new Uint16Array(GRID_SIZE * GRID_SIZE);
-let heatmapMode = false;
-let maxHeat = 1;
-
 // Pixel age: store block number of last paint per pixel
 const pixelBlock = new Uint32Array(GRID_SIZE * GRID_SIZE);
 // Owner address per pixel
@@ -131,38 +126,10 @@ function setPixel(x, y, r, g, b) {
   bufferDirty = true;
 }
 
-function trackHeat(x, y) {
-  const idx = y * GRID_SIZE + x;
-  heatmap[idx]++;
-  if (heatmap[idx] > maxHeat) maxHeat = heatmap[idx];
-}
-
 // Sync pixel buffer → off-screen ImageData → off-screen canvas
 function syncBuffer() {
   if (!bufferDirty) return;
-  if (heatmapMode) {
-    const data = imageData.data;
-    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-      const heat = heatmap[i];
-      const idx = i * 4;
-      if (heat === 0) {
-        data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 255;
-      } else {
-        const intensity = Math.min(255, Math.floor((heat / maxHeat) * 255));
-        // Black → Red → Yellow → White gradient
-        if (intensity < 128) {
-          data[idx] = intensity * 2; data[idx + 1] = 0; data[idx + 2] = 0;
-        } else if (intensity < 200) {
-          data[idx] = 255; data[idx + 1] = (intensity - 128) * 3.5; data[idx + 2] = 0;
-        } else {
-          data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = (intensity - 200) * 4.6;
-        }
-        data[idx + 3] = 255;
-      }
-    }
-  } else {
-    imageData.data.set(pixelBuffer);
-  }
+  imageData.data.set(pixelBuffer);
   offCtx.putImageData(imageData, 0, 0);
   bufferDirty = false;
 }
@@ -861,7 +828,7 @@ async function loadPixels() {
       const g = (color >> 8) & 0xff;
       const b = color & 0xff;
       setPixel(x, y, r, g, b);
-      trackHeat(x, y);
+
       const idx = y * GRID_SIZE + x;
       pixelBlock[idx] = block;
       pixelOwner[idx] = user;
@@ -892,7 +859,6 @@ function listenForPixels() {
       const g = (ci >> 8) & 0xff;
       const b = ci & 0xff;
       setPixel(xi, yi, r, g, b);
-      trackHeat(xi, yi);
       const pidx = yi * GRID_SIZE + xi;
       pixelOwner[pidx] = user;
       totalPixels++;
@@ -1125,13 +1091,6 @@ function replayEvents(upTo) {
   queueRender();
 }
 
-function toggleHeatmap() {
-  heatmapMode = !heatmapMode;
-  bufferDirty = true;
-  queueRender();
-  showStatus(heatmapMode ? "Heatmap on (H to toggle)" : "Heatmap off");
-}
-
 function shorten(a) {
   return a.slice(0, 6) + "..." + a.slice(-4);
 }
@@ -1199,7 +1158,6 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "Enter") confirmBurn();
     return;
   }
-  if (e.key === "h" || e.key === "H") { toggleHeatmap(); return; }
   if (e.key === "t" || e.key === "T") { toggleTimeMachine(); return; }
   if (pendingPixels.length === 0) return;
   if (e.key === "Escape") clearPending();
