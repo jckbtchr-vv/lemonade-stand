@@ -1,6 +1,6 @@
 // LEMONADE.EXE – Paperclip-Inspired Evolution
 // Token address (Base): 0xd2969cc475a49e73182ae1c517add57db0f1c2ac
-// All actions cost real LEMON tokens on Base.
+// All actions cost real $VV tokens on Base.
 
 // --- Config -----------------------------------------------------------------
 
@@ -19,7 +19,7 @@ const ERC20_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)"
 ];
 
-// Token cost mapping (in LEMON tokens) for each action type
+// Token cost mapping (in $VV tokens) for each action type
 const TOKEN_COSTS = {
   runStand: 0.1,
   buyLemons: 0.25,
@@ -42,7 +42,7 @@ let signer = null;
 let userAddress = null;
 let tokenContract = null;
 let tokenDecimals = 18;
-let tokenSymbol = "LEMON";
+let tokenSymbol = "VV";
 let lastChainId = null;
 let lastBalance = 0;
 let isEligible = false;
@@ -214,7 +214,7 @@ function hideTxPending() {
 }
 
 /**
- * Spend real LEMON tokens by transferring to burn address.
+ * Spend real $VV tokens by transferring to burn address.
  * Returns true if successful, false if user rejected or error.
  */
 async function spendTokens(amount, actionName) {
@@ -222,7 +222,7 @@ async function spendTokens(amount, actionName) {
   if (amount <= 0) return true;
 
   try {
-    showTxPending(`burning ${amount.toFixed(2)} LEMON...`);
+    showTxPending(`burning ${amount.toFixed(2)} $VV...`);
 
     const tokenWithSigner = tokenContract.connect(signer);
     const amountWei = ethers.parseUnits(amount.toFixed(4), tokenDecimals);
@@ -636,7 +636,7 @@ const NARRATIVES = {
       "a simple transaction: fruit becomes refreshment becomes profit.",
       "there's something satisfying about the efficiency of it all.",
       "",
-      "[ every action burns real LEMON tokens. choose wisely. ]"
+      "[ every action burns real $VV tokens. choose wisely. ]"
     ]
   },
   FIRST_HUNDRED: {
@@ -1005,7 +1005,7 @@ function renderProjects() {
         <div class="project-name">${p.name}</div>
         <div class="project-desc">${p.desc}</div>
         <div class="project-cost">cost: ${costStr}</div>
-        <div class="token-cost-tag">burns ${(p.tokenCost || TOKEN_COSTS.executeProject).toFixed(2)} LEMON</div>
+        <div class="token-cost-tag">burns ${(p.tokenCost || TOKEN_COSTS.executeProject).toFixed(2)} $VV</div>
         <button ${affordable ? '' : 'disabled'} onclick="executeProject('${p.id}')">
           ${affordable ? '> EXECUTE' : 'INSUFFICIENT'}
         </button>
@@ -1421,7 +1421,7 @@ function renderUpgrades() {
           <span class="upgrade-cost">${formatUsd(u.cost)}</span>
         </div>
         <div class="upgrade-desc">${u.desc}</div>
-        <div class="token-cost-tag">burns ${(u.tokenCost || TOKEN_COSTS.buyUpgrade).toFixed(2)} LEMON</div>
+        <div class="token-cost-tag">burns ${(u.tokenCost || TOKEN_COSTS.buyUpgrade).toFixed(2)} $VV</div>
         <button class="${btnClass}" ${disabled} onclick="buyUpgrade('${u.id}')" style="width:100%">
           ${affordable ? '> BUY' : 'NEED CASH'}
         </button>
@@ -1509,7 +1509,7 @@ function updateCooldownUI() {
   const rem = gameState.lastShiftAt + SHIFT_COOLDOWN_MS - now;
 
   if (rem <= 0) {
-    msgEl.textContent = "ready. (costs 0.10 LEMON)";
+    msgEl.textContent = "ready. (costs 0.10 $VV)";
     btn.disabled = txPending;
   } else {
     msgEl.textContent = `wait ${(rem/1000).toFixed(1)}s`;
