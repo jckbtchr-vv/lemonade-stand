@@ -173,8 +173,25 @@
 
     .download-group {
       display: flex;
+      flex-direction: column;
       gap: 4px;
     }
+
+    .brush-row {
+      display: flex;
+      gap: 4px;
+    }
+
+    .brush-btn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brush-btn.active { border-color: #fff; }
 
     /* Bottom-right */
     .bottom-right {
@@ -389,9 +406,10 @@
   <!-- Live Feed -->
   <div class="feed" id="feed"></div>
 
-  <!-- Download + Leaderboard -->
+  <!-- Bottom-left controls -->
   <div class="overlay bottom-left">
     <div class="download-group">
+      <div class="brush-row" id="brushRow"></div>
       <button onclick="downloadFull()">Download</button>
       <button onclick="downloadGrid()">3x3 Grid</button>
       <button onclick="document.getElementById('importFile').click()">Import</button>

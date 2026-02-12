@@ -77,10 +77,16 @@ let panStartViewX = 0;
 let panStartViewY = 0;
 let renderQueued = false;
 
+// Brush size
+const BRUSH_SIZES = [1, 3, 5, 7];
+let brushSize = 1;
+
 // Drawing state
 let isDrawing = false;
 let lastDrawX = -1;
 let lastDrawY = -1;
+let lastPlacedX = -1;
+let lastPlacedY = -1;
 
 // Pending pixels (accumulate across strokes until burn/clear)
 let pendingPixels = []; // [{x, y, origR, origG, origB}]
@@ -183,17 +189,21 @@ function render() {
     ctx.stroke();
   }
 
-  // Hover highlight with color preview
+  // Hover highlight with color preview (brush size)
   if (hoverX >= 0 && hoverX < GRID_SIZE && hoverY >= 0 && hoverY < GRID_SIZE) {
-    const sx = (hoverX - viewX) * zoom;
-    const sy = (hoverY - viewY) * zoom;
+    const half = Math.floor(brushSize / 2);
+    const bx = hoverX - half;
+    const by = hoverY - half;
+    const sx = (bx - viewX) * zoom;
+    const sy = (by - viewY) * zoom;
+    const bw = brushSize * zoom;
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = selectedColor;
-    ctx.fillRect(sx, sy, zoom, zoom);
+    ctx.fillRect(sx, sy, bw, bw);
     ctx.globalAlpha = 1;
     ctx.strokeStyle = "#fff";
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(sx, sy, zoom, zoom);
+    ctx.strokeRect(sx, sy, bw, bw);
   }
 }
 
@@ -236,12 +246,24 @@ function getLinePixels(x0, y0, x1, y1) {
 
 // --- Drawing Strokes ----------------------------------------------------------
 
-function startStroke(screenX, screenY) {
+function startStroke(screenX, screenY, shiftKey) {
   isDrawing = true;
   const [gx, gy] = screenToGrid(screenX, screenY);
-  addToPending(gx, gy);
+
+  // Shift-click: draw straight line from last placed point
+  if (shiftKey && lastPlacedX >= 0) {
+    const linePixels = getLinePixels(lastPlacedX, lastPlacedY, gx, gy);
+    for (const [px, py] of linePixels) {
+      addToPendingBrush(px, py);
+    }
+  } else {
+    addToPendingBrush(gx, gy);
+  }
+
   lastDrawX = gx;
   lastDrawY = gy;
+  lastPlacedX = gx;
+  lastPlacedY = gy;
 }
 
 function continueStroke(screenX, screenY) {
@@ -250,10 +272,21 @@ function continueStroke(screenX, screenY) {
 
   const linePixels = getLinePixels(lastDrawX, lastDrawY, gx, gy);
   for (const [px, py] of linePixels) {
-    addToPending(px, py);
+    addToPendingBrush(px, py);
   }
   lastDrawX = gx;
   lastDrawY = gy;
+  lastPlacedX = gx;
+  lastPlacedY = gy;
+}
+
+function addToPendingBrush(cx, cy) {
+  const half = Math.floor(brushSize / 2);
+  for (let dy = -half; dy <= half; dy++) {
+    for (let dx = -half; dx <= half; dx++) {
+      addToPending(cx + dx, cy + dy);
+    }
+  }
 }
 
 function addToPending(x, y) {
@@ -385,7 +418,7 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 canvas.addEventListener("mousedown", (e) => {
-  if (e.button === 1 || e.button === 2 || e.shiftKey) {
+  if (e.button === 1 || e.button === 2) {
     isPanning = true;
     panStartX = e.clientX;
     panStartY = e.clientY;
@@ -394,7 +427,7 @@ canvas.addEventListener("mousedown", (e) => {
     canvas.style.cursor = "grabbing";
     e.preventDefault();
   } else if (e.button === 0) {
-    startStroke(e.clientX, e.clientY);
+    startStroke(e.clientX, e.clientY, e.shiftKey);
   }
 });
 
@@ -579,6 +612,24 @@ function buildPalette() {
 function selectColor(color) {
   selectedColor = color;
   buildPalette();
+}
+
+function buildBrushRow() {
+  const row = document.getElementById("brushRow");
+  if (!row) return;
+  row.innerHTML = "";
+
+  BRUSH_SIZES.forEach((size) => {
+    const btn = document.createElement("button");
+    btn.className = "brush-btn" + (size === brushSize ? " active" : "");
+    btn.textContent = size + "px";
+    btn.onclick = () => {
+      brushSize = size;
+      buildBrushRow();
+      queueRender();
+    };
+    row.appendChild(btn);
+  });
 }
 
 // --- Token Price / Market Cap -------------------------------------------------
@@ -1132,6 +1183,7 @@ function showStatus(msg, shareCallback) {
 
 initBuffer();
 buildPalette();
+buildBrushRow();
 fetchTokenData();
 updateBlock();
 setInterval(fetchTokenData, 5000);
