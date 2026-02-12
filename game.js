@@ -565,7 +565,7 @@ function updateTitle() {
   const el = document.getElementById("dynamicTitle");
   if (!el) return;
   if (tokenMarketCap > 0) {
-    const mc = formatUsdCompact(tokenMarketCap);
+    const mc = "$" + Math.round(tokenMarketCap).toLocaleString();
     el.textContent = `THE ${mc} HOMEPAGE`;
     document.title = `THE ${mc} HOMEPAGE`;
   } else {
