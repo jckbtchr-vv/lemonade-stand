@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Leaderboard — THE HOMEPAGE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "DM Mono", monospace;
+      font-size: 0.7rem;
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    a { color: #888; text-decoration: none; }
+    a:hover { color: #fff; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .header-title {
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .loading {
+      color: #888;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 48px 0;
+    }
+
+    table {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      border-collapse: collapse;
+    }
+
+    th {
+      color: #888;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid #333;
+    }
+
+    th:last-child {
+      text-align: right;
+    }
+
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #111;
+    }
+
+    td:last-child {
+      text-align: right;
+      font-weight: 500;
+    }
+
+    .rank {
+      color: #888;
+      width: 40px;
+    }
+
+    .address {
+      color: #fff;
+    }
+
+    .ens {
+      color: #fff;
+    }
+
+    .raw-address {
+      color: #666;
+      margin-left: 8px;
+    }
+
+    tr:hover td {
+      background: #111;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">Leaderboard</div>
+    <a href="index.html">Back to canvas</a>
+  </div>
+
+  <div class="loading" id="loading">Loading pixels...</div>
+  <table id="leaderboard" style="display:none;">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Painter</th>
+        <th>Pixels</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboardBody"></tbody>
+  </table>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js" crossorigin="anonymous"></script>
+  <script>
+    const TOKEN_ADDRESS = "0xd2969cc475a49e73182ae1c517add57db0f1c2ac";
+    const CANVAS_ADDRESS = "0x0000000000000000000000000000000000000000"; // TODO: deploy and update
+    const LOCAL_MODE = CANVAS_ADDRESS === "0x0000000000000000000000000000000000000000";
+
+    const CANVAS_ABI = [
+      "event PixelPlaced(address indexed user, uint16 x, uint16 y, uint24 color)"
+    ];
+
+    // ENS resolution via Ethereum mainnet
+    const ENS_RPC = "https://cloudflare-eth.com";
+
+    function shorten(a) {
+      return a.slice(0, 6) + "..." + a.slice(-4);
+    }
+
+    async function resolveENS(address) {
+      try {
+        const provider = new ethers.JsonRpcProvider(ENS_RPC);
+        const name = await provider.lookupAddress(address);
+        return name;
+      } catch {
+        return null;
+      }
+    }
+
+    async function loadLeaderboard() {
+      const loading = document.getElementById("loading");
+      const table = document.getElementById("leaderboard");
+      const tbody = document.getElementById("leaderboardBody");
+
+      if (LOCAL_MODE) {
+        loading.textContent = "Demo mode — no on-chain data yet";
+        return;
+      }
+
+      try {
+        const provider = new ethers.JsonRpcProvider("https://mainnet.base.org");
+        const canvas = new ethers.Contract(CANVAS_ADDRESS, CANVAS_ABI, provider);
+        const events = await canvas.queryFilter("PixelPlaced", 0, "latest");
+
+        // Count pixels per address
+        const counts = {};
+        for (const e of events) {
+          const addr = e.args.user;
+          counts[addr] = (counts[addr] || 0) + 1;
+        }
+
+        // Sort by count descending
+        const sorted = Object.entries(counts)
+          .sort((a, b) => b[1] - a[1]);
+
+        if (sorted.length === 0) {
+          loading.textContent = "No pixels painted yet";
+          return;
+        }
+
+        // Render table
+        loading.style.display = "none";
+        table.style.display = "table";
+
+        for (let i = 0; i < sorted.length; i++) {
+          const [address, count] = sorted[i];
+          const tr = document.createElement("tr");
+
+          const rankTd = document.createElement("td");
+          rankTd.className = "rank";
+          rankTd.textContent = i + 1;
+
+          const addrTd = document.createElement("td");
+          addrTd.className = "address";
+          addrTd.textContent = shorten(address);
+          addrTd.id = `addr-${i}`;
+
+          const countTd = document.createElement("td");
+          countTd.textContent = count.toLocaleString();
+
+          tr.appendChild(rankTd);
+          tr.appendChild(addrTd);
+          tr.appendChild(countTd);
+          tbody.appendChild(tr);
+
+          // Resolve ENS in background (don't block render)
+          resolveENS(address).then(name => {
+            if (name) {
+              const el = document.getElementById(`addr-${i}`);
+              if (el) {
+                el.innerHTML = `<span class="ens">${name}</span><span class="raw-address">${shorten(address)}</span>`;
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        loading.textContent = "Failed to load — contract may not be deployed";
+      }
+    }
+
+    loadLeaderboard();
+  </script>
+</body>
+</html>

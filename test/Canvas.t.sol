@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 import "../src/Canvas.sol";
 
 contract MockERC20 {
-    string public name = "Lemon";
-    string public symbol = "LEMON";
+    string public name = "VV";
+    string public symbol = "VV";
     uint8 public decimals = 18;
 
     mapping(address => uint256) public balanceOf;
@@ -42,19 +42,21 @@ contract CanvasTest is Test {
     address constant DEAD = 0x000000000000000000000000000000000000dEaD;
 
     uint256 ONE_TOKEN;
+    uint256 BURN_PER_PIXEL;
 
     function setUp() public {
         token = new MockERC20();
         canvas = new Canvas(address(token));
         ONE_TOKEN = 1e18;
+        BURN_PER_PIXEL = 1000 * ONE_TOKEN;
 
-        // Fund alice with 1000 tokens and approve
-        token.mint(alice, 1000 * ONE_TOKEN);
+        // Fund alice with 1,000,000 tokens and approve
+        token.mint(alice, 1_000_000 * ONE_TOKEN);
         vm.prank(alice);
         token.approve(address(canvas), type(uint256).max);
 
-        // Fund bob with 10 tokens and approve
-        token.mint(bob, 10 * ONE_TOKEN);
+        // Fund bob with 5,000 tokens and approve (enough for 5 pixels)
+        token.mint(bob, 5_000 * ONE_TOKEN);
         vm.prank(bob);
         token.approve(address(canvas), type(uint256).max);
     }
@@ -66,7 +68,7 @@ contract CanvasTest is Test {
     }
 
     function test_constructor_setsBurnAmount() public view {
-        assertEq(canvas.burnAmount(), ONE_TOKEN);
+        assertEq(canvas.burnAmount(), BURN_PER_PIXEL);
     }
 
     function test_constants() public view {
@@ -81,8 +83,8 @@ contract CanvasTest is Test {
         canvas.placePixel(0, 0, 0xFF0000);
 
         // Token burned to dead address
-        assertEq(token.balanceOf(DEAD), ONE_TOKEN);
-        assertEq(token.balanceOf(alice), 999 * ONE_TOKEN);
+        assertEq(token.balanceOf(DEAD), BURN_PER_PIXEL);
+        assertEq(token.balanceOf(alice), 999_000 * ONE_TOKEN);
     }
 
     function test_placePixel_emitsEvent() public {
@@ -96,7 +98,7 @@ contract CanvasTest is Test {
     function test_placePixel_maxCoords() public {
         vm.prank(alice);
         canvas.placePixel(999, 999, 0xFFFFFF);
-        assertEq(token.balanceOf(DEAD), ONE_TOKEN);
+        assertEq(token.balanceOf(DEAD), BURN_PER_PIXEL);
     }
 
     function test_placePixel_revertsXOutOfBounds() public {
@@ -119,7 +121,7 @@ contract CanvasTest is Test {
 
     function test_placePixel_revertsNoAllowance() public {
         address noApproval = makeAddr("noApproval");
-        token.mint(noApproval, 10 * ONE_TOKEN);
+        token.mint(noApproval, 10_000 * ONE_TOKEN);
         // No approve call
 
         vm.prank(noApproval);
@@ -145,8 +147,8 @@ contract CanvasTest is Test {
         canvas.placePixel(2, 2, 0x0000FF);
         vm.stopPrank();
 
-        assertEq(token.balanceOf(DEAD), 3 * ONE_TOKEN);
-        assertEq(token.balanceOf(alice), 997 * ONE_TOKEN);
+        assertEq(token.balanceOf(DEAD), 3 * BURN_PER_PIXEL);
+        assertEq(token.balanceOf(alice), 997_000 * ONE_TOKEN);
     }
 
     function test_placePixel_sameCoordOverwrite() public {
@@ -157,13 +159,13 @@ contract CanvasTest is Test {
         vm.prank(bob);
         canvas.placePixel(100, 100, 0x0000FF);
 
-        assertEq(token.balanceOf(DEAD), 2 * ONE_TOKEN);
+        assertEq(token.balanceOf(DEAD), 2 * BURN_PER_PIXEL);
     }
 
     function test_placePixel_zeroColor() public {
         vm.prank(alice);
         canvas.placePixel(0, 0, 0x000000);
-        assertEq(token.balanceOf(DEAD), ONE_TOKEN);
+        assertEq(token.balanceOf(DEAD), BURN_PER_PIXEL);
     }
 
     function test_placePixel_maxColor() public {
@@ -188,8 +190,8 @@ contract CanvasTest is Test {
         vm.prank(alice);
         canvas.placePixels(xs, ys, colors);
 
-        assertEq(token.balanceOf(DEAD), 3 * ONE_TOKEN);
-        assertEq(token.balanceOf(alice), 997 * ONE_TOKEN);
+        assertEq(token.balanceOf(DEAD), 3 * BURN_PER_PIXEL);
+        assertEq(token.balanceOf(alice), 997_000 * ONE_TOKEN);
     }
 
     function test_placePixels_emitsEvents() public {
@@ -243,12 +245,12 @@ contract CanvasTest is Test {
     }
 
     function test_placePixels_revertsInsufficientBalance() public {
-        // Bob has 10 tokens, try to place 11
-        uint16[] memory xs = new uint16[](11);
-        uint16[] memory ys = new uint16[](11);
-        uint24[] memory colors = new uint24[](11);
+        // Bob has 5,000 tokens (enough for 5 pixels), try to place 6
+        uint16[] memory xs = new uint16[](6);
+        uint16[] memory ys = new uint16[](6);
+        uint24[] memory colors = new uint24[](6);
 
-        for (uint16 i = 0; i < 11; i++) {
+        for (uint16 i = 0; i < 6; i++) {
             xs[i] = i; ys[i] = 0; colors[i] = 0x000000;
         }
 
@@ -281,6 +283,6 @@ contract CanvasTest is Test {
         vm.prank(alice);
         canvas.placePixels(xs, ys, colors);
 
-        assertEq(token.balanceOf(DEAD), ONE_TOKEN);
+        assertEq(token.balanceOf(DEAD), BURN_PER_PIXEL);
     }
 }

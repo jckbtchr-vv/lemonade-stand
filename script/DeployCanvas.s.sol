@@ -5,12 +5,12 @@ import {Script, console} from "forge-std/Script.sol";
 import {Canvas} from "../src/Canvas.sol";
 
 contract DeployCanvas is Script {
-    // LEMON token on Base
-    address constant LEMON = 0xd2969cc475A49e73182Ae1c517AdD57dB0F1c2AC;
+    // VV token on Base
+    address constant VV = 0xd2969cc475A49e73182Ae1c517AdD57dB0F1c2AC;
 
     function run() public {
         vm.startBroadcast();
-        Canvas canvas = new Canvas(LEMON);
+        Canvas canvas = new Canvas(VV);
         vm.stopBroadcast();
 
         console.log("Canvas deployed at:", address(canvas));

@@ -2,22 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Canvas</title>
+  <title>THE HOMEPAGE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: "Space Mono", monospace;
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
       background: #000;
       color: #fff;
       overflow: hidden;
       height: 100vh;
       width: 100vw;
       cursor: crosshair;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
 
     canvas#grid {
@@ -27,81 +30,95 @@
       width: 100%; height: 100%;
     }
 
-    /* Overlay UI */
     .overlay {
       position: fixed;
       z-index: 10;
       pointer-events: none;
     }
 
-    .overlay * {
-      pointer-events: auto;
+    .overlay * { pointer-events: auto; }
+
+    .dim { color: #666; }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: #333;
     }
 
-    /* Top-left: title + coords */
-    .top-left {
-      top: 16px; left: 16px;
+    /* Top-left */
+    .top-left { top: 16px; left: 16px; }
+    .coords { color: #888; }
+
+    /* Top-center */
+    .top-center {
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
     }
 
-    .title {
-      font-size: 0.8rem;
-      font-weight: 700;
+    .dynamic-title {
+      font-weight: 500;
       letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 4px;
+      white-space: nowrap;
     }
 
-    .coords {
-      font-size: 0.65rem;
-      color: #888;
-      letter-spacing: 1px;
-    }
-
-    /* Top-right: wallet */
+    /* Top-right */
     .top-right {
       top: 16px; right: 16px;
       display: flex;
-      align-items: center;
-      gap: 12px;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
     }
 
-    .stat {
-      text-align: right;
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    .top-right .divider { margin: 2px 0; }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
     }
 
     .stat-label { color: #888; }
-    .stat-value { color: #fff; font-weight: 700; }
+    .stat-value { color: #fff; font-weight: 500; }
 
     button {
-      font-family: "Space Mono", monospace;
-      font-size: 0.7rem;
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       background: #111;
       color: #fff;
       border: 1px solid #333;
-      padding: 6px 14px;
+      padding: 5px 12px;
       cursor: pointer;
       transition: border-color 0.15s;
     }
 
     button:hover { border-color: #fff; }
 
-    /* Bottom-center: color picker */
+    /* Bottom-center */
     .bottom-center {
       bottom: 16px;
       left: 50%;
       transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .palette-row {
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
     .swatch {
-      width: 24px; height: 24px;
+      width: 22px; height: 22px;
       border: 2px solid #333;
       cursor: pointer;
       transition: border-color 0.1s, transform 0.1s;
@@ -111,77 +128,204 @@
     .swatch.active { border-color: #fff; transform: scale(1.2); }
 
     .hex-input {
-      font-family: "Space Mono", monospace;
-      font-size: 0.7rem;
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
       background: #111;
       color: #fff;
       border: 1px solid #333;
       padding: 4px 8px;
-      width: 80px;
+      width: 76px;
       text-align: center;
       text-transform: uppercase;
     }
 
     .hex-input:focus { outline: none; border-color: #fff; }
 
-    /* Bottom-right: pixel count */
+    /* Bottom-left */
+    .bottom-left { bottom: 16px; left: 16px; }
+
+    .download-group {
+      display: flex;
+      gap: 4px;
+    }
+
+    /* Bottom-right */
     .bottom-right {
       bottom: 16px; right: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
     }
+
+    .bottom-right .divider { margin: 2px 0; }
 
     /* Status toast */
     #status {
       position: fixed;
-      bottom: 60px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 20;
-      font-size: 0.7rem;
       color: #888;
-      letter-spacing: 1px;
-      text-transform: uppercase;
       opacity: 0;
       transition: opacity 0.3s;
     }
 
     #status.visible { opacity: 1; }
+
+    /* Pending bar */
+    .pending-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 8px;
+    }
+
+    .pending-info { font-weight: 500; }
+
+    .pending-fine-print { color: #666; }
+
+    .pending-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .burn-btn {
+      background: #fff !important;
+      color: #000 !important;
+      font-weight: 500;
+      border-color: #fff !important;
+    }
+
+    .burn-btn:hover { background: #ccc !important; }
+
+    /* Confirm popover */
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .confirm-box {
+      background: #111;
+      border: 1px solid #333;
+      padding: 24px 28px;
+      max-width: 320px;
+      width: 90%;
+      text-align: center;
+    }
+
+    .confirm-cost {
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .confirm-warnings {
+      color: #888;
+      line-height: 2.2;
+      margin-bottom: 20px;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
   <canvas id="grid"></canvas>
 
-  <!-- Title + Coords -->
+  <!-- Coords -->
   <div class="overlay top-left">
-    <div class="title">Canvas</div>
     <div class="coords" id="coords">(---, ---)</div>
+  </div>
+
+  <!-- Dynamic Title -->
+  <div class="overlay top-center">
+    <div class="dynamic-title" id="dynamicTitle">THE HOMEPAGE</div>
   </div>
 
   <!-- Wallet -->
   <div class="overlay top-right">
-    <div class="stat">
-      <div class="stat-label">Balance</div>
-      <div class="stat-value" id="balance">-</div>
+    <div class="stat-row">
+      <span class="stat-label">Balance</span>
+      <span class="stat-value" id="balance">-</span>
     </div>
-    <div class="stat">
-      <div class="stat-label">Address</div>
-      <div class="stat-value" id="address">---</div>
+    <div class="divider"></div>
+    <div class="stat-row">
+      <span class="stat-label">Address</span>
+      <span class="stat-value" id="address">---</span>
     </div>
+    <div class="divider"></div>
     <button id="connectBtn" onclick="connectWallet()">Connect</button>
   </div>
 
-  <!-- Color Picker -->
-  <div class="overlay bottom-center" id="palette"></div>
+  <!-- Pending + Color Picker -->
+  <div class="overlay bottom-center" id="paletteContainer">
+    <div class="pending-bar" id="pendingBar" style="display:none;">
+      <div class="pending-info" id="pendingInfo"></div>
+      <div class="pending-fine-print">Anyone can paint over your pixels. No refunds.</div>
+      <div class="pending-actions">
+        <button class="burn-btn" onclick="burnPending()">Burn</button>
+        <button onclick="clearPending()">Clear</button>
+      </div>
+      <div class="divider"></div>
+    </div>
+    <div class="palette-row" id="palette"></div>
+  </div>
 
-  <!-- Pixel Count -->
+  <!-- Download + Leaderboard -->
+  <div class="overlay bottom-left">
+    <div class="download-group">
+      <button onclick="downloadFull()">Download</button>
+      <button onclick="downloadGrid()">3x3 Grid</button>
+      <button onclick="window.location='leaderboard.html'">Leaderboard</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
   <div class="overlay bottom-right">
-    <div class="stat">
-      <div class="stat-label">Pixels Placed</div>
-      <div class="stat-value" id="pixelCount">0</div>
+    <div class="stat-row">
+      <span class="stat-label">Per pixel</span>
+      <span class="stat-value" id="pixelCost">1,000 VV</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row">
+      <span class="stat-label">Spent</span>
+      <span class="stat-value" id="sessionCost">$0.00</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row">
+      <span class="stat-label">Painted</span>
+      <span class="stat-value" id="pixelCount">0</span>
     </div>
   </div>
 
   <!-- Status -->
   <div id="status"></div>
+
+  <!-- Confirm Popover -->
+  <div id="confirmOverlay" class="confirm-overlay" style="display:none;">
+    <div class="confirm-box">
+      <div class="confirm-cost" id="confirmCost"></div>
+      <div class="confirm-warnings">
+        This will spend your tokens. They are destroyed forever.<br>
+        Anyone can paint over your pixels at any time.<br>
+        No refunds.
+      </div>
+      <div class="confirm-actions">
+        <button class="burn-btn" onclick="confirmBurn()">Burn</button>
+        <button onclick="cancelBurn()">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="game.js"></script>
