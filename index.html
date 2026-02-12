@@ -210,6 +210,39 @@
 
     .pending-fine-print { color: #666; }
 
+    /* Live feed */
+    .feed {
+      position: fixed;
+      left: 16px;
+      bottom: 46px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      pointer-events: none;
+    }
+
+    .feed-item {
+      color: #555;
+      white-space: nowrap;
+      transition: opacity 0.5s;
+    }
+
+    /* Time machine */
+    .time-machine {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 4px;
+    }
+
+    .time-machine input[type="range"] {
+      width: 200px;
+      accent-color: #fff;
+    }
+
+    .time-machine span { color: #888; }
+
     .pending-actions {
       display: flex;
       gap: 8px;
@@ -259,6 +292,20 @@
       display: flex;
       gap: 8px;
       justify-content: center;
+    }
+
+    @media (max-width: 640px) {
+      body { font-size: 10px; }
+      .top-left, .top-right, .bottom-left, .bottom-right { padding: 6px; }
+      .top-left { max-width: 45%; }
+      .top-right { max-width: 45%; }
+      .top-center { font-size: 10px; top: 4px; }
+      .download-group { flex-wrap: wrap; }
+      .bottom-center { bottom: 50px; }
+      .swatch { width: 18px; height: 18px; }
+      .hex-input { width: 60px; font-size: 10px; }
+      button { padding: 4px 8px; font-size: 10px; }
+      .confirm-box { padding: 16px; }
     }
   </style>
 </head>
@@ -316,6 +363,7 @@
     </div>
     <div class="divider"></div>
     <button id="connectBtn" onclick="connectWallet()">Connect</button>
+    <button onclick="window.open('https://zora.co/@visualizevalue','_blank')">Buy VV</button>
     <div class="divider"></div>
     <div id="status"></div>
   </div>
@@ -330,17 +378,25 @@
       </div>
       <div class="divider"></div>
     </div>
-    <div class="palette-row">
-      <div class="coords" id="coords">(---, ---)</div>
-      <div id="palette" style="display:flex;align-items:center;gap:6px;"></div>
+    <div class="time-machine" style="display:none;">
+      <span id="timeLabel">0 / 0</span>
+      <input type="range" id="timeMachine" min="0" max="0" value="0" oninput="onTimeSlider(this.value)" />
     </div>
+    <div class="coords" id="coords">(---, ---)</div>
+    <div id="palette" style="display:flex;align-items:center;gap:6px;"></div>
   </div>
+
+  <!-- Live Feed -->
+  <div class="feed" id="feed"></div>
 
   <!-- Download + Leaderboard -->
   <div class="overlay bottom-left">
     <div class="download-group">
       <button onclick="downloadFull()">Download</button>
       <button onclick="downloadGrid()">3x3 Grid</button>
+      <button onclick="document.getElementById('importFile').click()">Import</button>
+      <input type="file" id="importFile" accept="image/*" style="display:none" onchange="importImage(this)" />
+      <button onclick="window.location='gallery.html'">Gallery</button>
       <button onclick="window.location='leaderboard.html'">Leaderboard</button>
       <button onclick="window.location='terms.html'">Terms</button>
     </div>

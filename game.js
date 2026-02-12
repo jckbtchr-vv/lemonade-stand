@@ -40,6 +40,20 @@ let sessionPixels = 0;
 let tokenPriceUsd = 0;
 let tokenMarketCap = 0;
 
+// Heatmap: track overwrite count per pixel
+const heatmap = new Uint16Array(GRID_SIZE * GRID_SIZE);
+let heatmapMode = false;
+let maxHeat = 1;
+
+// Pixel age: store block number of last paint per pixel
+const pixelBlock = new Uint32Array(GRID_SIZE * GRID_SIZE);
+// Owner address per pixel
+const pixelOwner = new Array(GRID_SIZE * GRID_SIZE).fill(null);
+
+// Time machine: all events in order
+let allEvents = [];
+let timeMachineActive = false;
+
 // Pixel buffer: 1000x1000, 4 bytes per pixel (RGBA)
 const pixelBuffer = new Uint8ClampedArray(GRID_SIZE * GRID_SIZE * 4);
 
@@ -117,10 +131,38 @@ function setPixel(x, y, r, g, b) {
   bufferDirty = true;
 }
 
+function trackHeat(x, y) {
+  const idx = y * GRID_SIZE + x;
+  heatmap[idx]++;
+  if (heatmap[idx] > maxHeat) maxHeat = heatmap[idx];
+}
+
 // Sync pixel buffer → off-screen ImageData → off-screen canvas
 function syncBuffer() {
   if (!bufferDirty) return;
-  imageData.data.set(pixelBuffer);
+  if (heatmapMode) {
+    const data = imageData.data;
+    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+      const heat = heatmap[i];
+      const idx = i * 4;
+      if (heat === 0) {
+        data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 255;
+      } else {
+        const intensity = Math.min(255, Math.floor((heat / maxHeat) * 255));
+        // Black → Red → Yellow → White gradient
+        if (intensity < 128) {
+          data[idx] = intensity * 2; data[idx + 1] = 0; data[idx + 2] = 0;
+        } else if (intensity < 200) {
+          data[idx] = 255; data[idx + 1] = (intensity - 128) * 3.5; data[idx + 2] = 0;
+        } else {
+          data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = (intensity - 200) * 4.6;
+        }
+        data[idx + 3] = 255;
+      }
+    }
+  } else {
+    imageData.data.set(pixelBuffer);
+  }
   offCtx.putImageData(imageData, 0, 0);
   bufferDirty = false;
 }
@@ -159,7 +201,7 @@ function render() {
     const offsetY = (startRow - viewY) * zoom;
 
     ctx.strokeStyle = "#333";
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     for (let col = startCol; col <= endCol; col++) {
       const sx = offsetX + (col - startCol) * zoom;
@@ -174,10 +216,14 @@ function render() {
     ctx.stroke();
   }
 
-  // Hover highlight
+  // Hover highlight with color preview
   if (hoverX >= 0 && hoverX < GRID_SIZE && hoverY >= 0 && hoverY < GRID_SIZE) {
     const sx = (hoverX - viewX) * zoom;
     const sy = (hoverY - viewY) * zoom;
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = selectedColor;
+    ctx.fillRect(sx, sy, zoom, zoom);
+    ctx.globalAlpha = 1;
     ctx.strokeStyle = "#fff";
     ctx.lineWidth = 1.5;
     ctx.strokeRect(sx, sy, zoom, zoom);
@@ -316,7 +362,9 @@ function confirmBurn() {
     document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
     updatePixelStats();
     updateSessionCost();
-    showStatus(`${count} pixel${count > 1 ? "s" : ""} burned`);
+    const burned = [...pendingPixels];
+    addFeedItem("0xDEMO...demo", count);
+    showStatus(`${count} pixel${count > 1 ? "s" : ""} burned`, () => shareToTwitter(burned, selectedColor));
     pendingPixels = [];
     pendingSet = new Set();
     updatePendingBar();
@@ -364,12 +412,7 @@ canvas.addEventListener("mousemove", (e) => {
   hoverX = gx;
   hoverY = gy;
 
-  const coordsEl = document.getElementById("coords");
-  if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
-    coordsEl.textContent = `(${gx}, ${gy})`;
-  } else {
-    coordsEl.textContent = "(---, ---)";
-  }
+  updateCoordsDisplay(gx, gy);
 
   if (!isPanning && !isDrawing) queueRender();
 });
@@ -414,6 +457,95 @@ document.addEventListener("mouseleave", () => {
 });
 
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+// --- Touch Support ------------------------------------------------------------
+
+let lastTouchDist = 0;
+let touchMode = null; // "draw" | "pinch"
+
+canvas.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    touchMode = "pinch";
+    lastTouchDist = getTouchDist(e.touches);
+    const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    panStartX = cx;
+    panStartY = cy;
+    panStartViewX = viewX;
+    panStartViewY = viewY;
+  } else if (e.touches.length === 1) {
+    touchMode = "draw";
+    const t = e.touches[0];
+    startStroke(t.clientX, t.clientY);
+    const [gx, gy] = screenToGrid(t.clientX, t.clientY);
+    hoverX = gx;
+    hoverY = gy;
+    updateCoordsDisplay(gx, gy);
+  }
+}, { passive: false });
+
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+  if (touchMode === "pinch" && e.touches.length === 2) {
+    const dist = getTouchDist(e.touches);
+    const factor = dist / lastTouchDist;
+    lastTouchDist = dist;
+
+    const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const [gxBefore] = screenToGrid(cx, cy);
+    const [, gyBefore] = screenToGrid(cx, cy);
+
+    zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
+    viewX = gxBefore - cx / zoom;
+    viewY = gyBefore - cy / zoom;
+
+    // Pan
+    const dx = cx - panStartX;
+    const dy = cy - panStartY;
+    viewX = panStartViewX - dx / zoom;
+    viewY = panStartViewY - dy / zoom;
+
+    clampView();
+    queueRender();
+  } else if (touchMode === "draw" && e.touches.length === 1) {
+    const t = e.touches[0];
+    if (isDrawing) continueStroke(t.clientX, t.clientY);
+    const [gx, gy] = screenToGrid(t.clientX, t.clientY);
+    hoverX = gx;
+    hoverY = gy;
+    updateCoordsDisplay(gx, gy);
+    queueRender();
+  }
+}, { passive: false });
+
+canvas.addEventListener("touchend", (e) => {
+  e.preventDefault();
+  if (isDrawing) endStroke();
+  if (e.touches.length === 0) touchMode = null;
+});
+
+function getTouchDist(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function updateCoordsDisplay(gx, gy) {
+  const coordsEl = document.getElementById("coords");
+  if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
+    const idx = gy * GRID_SIZE + gx;
+    const owner = pixelOwner[idx];
+    if (owner) {
+      coordsEl.textContent = `(${gx}, ${gy}) ${shorten(owner)}`;
+    } else {
+      coordsEl.textContent = `(${gx}, ${gy})`;
+    }
+  } else {
+    coordsEl.textContent = "(---, ---)";
+  }
+}
 
 canvas.addEventListener("wheel", (e) => {
   e.preventDefault();
@@ -648,10 +780,13 @@ async function placePixelsBatch() {
   }
 
   const count = pendingPixels.length;
-  const colorInt = hexToUint24(selectedColor);
   const xs = pendingPixels.map(p => p.x);
   const ys = pendingPixels.map(p => p.y);
-  const colors = xs.map(() => colorInt);
+  const colors = pendingPixels.map(p => {
+    // Read actual color from pixel buffer (supports imported images with per-pixel colors)
+    const idx = (p.y * GRID_SIZE + p.x) * 4;
+    return (pixelBuffer[idx] << 16) | (pixelBuffer[idx + 1] << 8) | pixelBuffer[idx + 2];
+  });
 
   try {
     showStatus("Checking allowance...");
@@ -682,7 +817,8 @@ async function placePixelsBatch() {
     updatePixelStats();
     updateSessionCost();
 
-    showStatus(`${count} pixel${count > 1 ? "s" : ""} burned`);
+    const burned = [...pendingPixels];
+    showStatus(`${count} pixel${count > 1 ? "s" : ""} burned`, () => shareToTwitter(burned, selectedColor));
     pendingPixels = [];
     pendingSet = new Set();
     updatePendingBar();
@@ -711,14 +847,24 @@ async function loadPixels() {
 
     totalPixels = events.length;
 
-    events.forEach((e) => {
-      const x = Number(e.args.x);
-      const y = Number(e.args.y);
-      const color = Number(e.args.color);
+    allEvents = events.map((e) => ({
+      x: Number(e.args.x),
+      y: Number(e.args.y),
+      color: Number(e.args.color),
+      user: e.args.user,
+      block: e.blockNumber,
+    }));
+
+    allEvents.forEach((ev) => {
+      const { x, y, color, user, block } = ev;
       const r = (color >> 16) & 0xff;
       const g = (color >> 8) & 0xff;
       const b = color & 0xff;
       setPixel(x, y, r, g, b);
+      trackHeat(x, y);
+      const idx = y * GRID_SIZE + x;
+      pixelBlock[idx] = block;
+      pixelOwner[idx] = user;
     });
 
     document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
@@ -735,6 +881,9 @@ function listenForPixels() {
   if (!provider || LOCAL_MODE) return;
   try {
     const canvasContract = new ethers.Contract(CANVAS_ADDRESS, CANVAS_ABI, provider);
+    let feedBatch = {};
+    let feedTimer = null;
+
     canvasContract.on("PixelPlaced", (user, x, y, color) => {
       const xi = Number(x);
       const yi = Number(y);
@@ -743,10 +892,24 @@ function listenForPixels() {
       const g = (ci >> 8) & 0xff;
       const b = ci & 0xff;
       setPixel(xi, yi, r, g, b);
+      trackHeat(xi, yi);
+      const pidx = yi * GRID_SIZE + xi;
+      pixelOwner[pidx] = user;
       totalPixels++;
       document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
       updatePixelStats();
       queueRender();
+
+      // Batch feed items per user (events arrive in rapid succession for batch txs)
+      const addr = user;
+      feedBatch[addr] = (feedBatch[addr] || 0) + 1;
+      clearTimeout(feedTimer);
+      feedTimer = setTimeout(() => {
+        for (const [a, c] of Object.entries(feedBatch)) {
+          addFeedItem(a, c);
+        }
+        feedBatch = {};
+      }, 500);
     });
   } catch (err) {
     console.error("Event listener failed:", err);
@@ -788,6 +951,121 @@ function downloadGrid() {
   }
 }
 
+function shareToTwitter(pixels, color) {
+  const count = pixels.length;
+  const vvCost = count * 1000;
+  const mc = tokenMarketCap > 0 ? " on THE $" + Math.round(tokenMarketCap).toLocaleString() + " HOMEPAGE" : "";
+  const text = `Burned ${vvCost.toLocaleString()} VV for ${count} pixel${count > 1 ? "s" : ""}${mc}`;
+  const url = encodeURIComponent(window.location.origin + window.location.pathname);
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}`, "_blank");
+}
+
+// --- Live Feed ----------------------------------------------------------------
+
+const MAX_FEED_ITEMS = 5;
+
+function addFeedItem(address, count) {
+  const feed = document.getElementById("feed");
+  if (!feed) return;
+
+  const item = document.createElement("div");
+  item.className = "feed-item";
+  item.textContent = `${shorten(address)} burned ${(count * 1000).toLocaleString()} VV (${count} px)`;
+
+  feed.appendChild(item);
+
+  // Keep max items
+  while (feed.children.length > MAX_FEED_ITEMS) {
+    feed.removeChild(feed.firstChild);
+  }
+
+  // Fade out after 8s
+  setTimeout(() => {
+    item.style.opacity = "0";
+    setTimeout(() => item.remove(), 500);
+  }, 8000);
+}
+
+// --- Image Import -------------------------------------------------------------
+
+function importImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      // Scale image to fit within the grid, max 100x100 by default
+      const maxDim = Math.min(100, GRID_SIZE);
+      let w = img.width;
+      let h = img.height;
+      if (w > maxDim || h > maxDim) {
+        const scale = maxDim / Math.max(w, h);
+        w = Math.floor(w * scale);
+        h = Math.floor(h * scale);
+      }
+
+      // Draw to temp canvas to read pixels
+      const tmp = document.createElement("canvas");
+      tmp.width = w;
+      tmp.height = h;
+      const tmpCtx = tmp.getContext("2d");
+      tmpCtx.drawImage(img, 0, 0, w, h);
+      const data = tmpCtx.getImageData(0, 0, w, h).data;
+
+      // Place at center of current view
+      const startX = Math.floor(viewX + (canvas.width / zoom) / 2 - w / 2);
+      const startY = Math.floor(viewY + (canvas.height / zoom) / 2 - h / 2);
+
+      let count = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const si = (y * w + x) * 4;
+          const r = data[si], g = data[si + 1], b = data[si + 2], a = data[si + 3];
+          if (a < 128) continue; // skip transparent pixels
+
+          const gx = startX + x;
+          const gy = startY + y;
+          if (gx < 0 || gx >= GRID_SIZE || gy < 0 || gy >= GRID_SIZE) continue;
+
+          const key = `${gx},${gy}`;
+          if (pendingSet.has(key)) continue;
+          pendingSet.add(key);
+
+          const pidx = (gy * GRID_SIZE + gx) * 4;
+          pendingPixels.push({
+            x: gx, y: gy,
+            origR: pixelBuffer[pidx],
+            origG: pixelBuffer[pidx + 1],
+            origB: pixelBuffer[pidx + 2],
+          });
+
+          setPixel(gx, gy, r, g, b);
+          count++;
+        }
+      }
+
+      // Temporarily override selected color for the import — each pixel has its own color
+      queueRender();
+      updatePendingBar();
+      showStatus(`Imported ${count} pixels — review and burn`);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = ""; // reset so same file can be re-imported
+}
+window.importImage = importImage;
+
+function onTimeSlider(val) {
+  const n = parseInt(val);
+  replayEvents(n);
+  const label = document.getElementById("timeLabel");
+  if (label) label.textContent = `${n.toLocaleString()} / ${allEvents.length.toLocaleString()}`;
+}
+window.onTimeSlider = onTimeSlider;
+
 window.downloadFull = downloadFull;
 window.downloadGrid = downloadGrid;
 
@@ -800,6 +1078,58 @@ function hexToUint24(hex) {
 function hexToRgb(hex) {
   const n = parseInt(hex.replace("#", ""), 16);
   return { r: (n >> 16) & 0xff, g: (n >> 8) & 0xff, b: n & 0xff };
+}
+
+// --- Time Machine -------------------------------------------------------------
+
+function toggleTimeMachine() {
+  const slider = document.getElementById("timeMachine");
+  if (!slider) return;
+
+  timeMachineActive = !timeMachineActive;
+  slider.parentElement.style.display = timeMachineActive ? "flex" : "none";
+
+  if (timeMachineActive) {
+    slider.max = allEvents.length;
+    slider.value = allEvents.length;
+    showStatus("Time machine on (T to toggle)");
+  } else {
+    // Restore full canvas
+    replayEvents(allEvents.length);
+    showStatus("Time machine off");
+  }
+}
+
+function replayEvents(upTo) {
+  // Clear buffer to black
+  for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+    const idx = i * 4;
+    pixelBuffer[idx] = 0;
+    pixelBuffer[idx + 1] = 0;
+    pixelBuffer[idx + 2] = 0;
+    pixelBuffer[idx + 3] = 255;
+  }
+
+  for (let i = 0; i < upTo && i < allEvents.length; i++) {
+    const { x, y, color } = allEvents[i];
+    const r = (color >> 16) & 0xff;
+    const g = (color >> 8) & 0xff;
+    const b = color & 0xff;
+    const idx = (y * GRID_SIZE + x) * 4;
+    pixelBuffer[idx] = r;
+    pixelBuffer[idx + 1] = g;
+    pixelBuffer[idx + 2] = b;
+  }
+
+  bufferDirty = true;
+  queueRender();
+}
+
+function toggleHeatmap() {
+  heatmapMode = !heatmapMode;
+  bufferDirty = true;
+  queueRender();
+  showStatus(heatmapMode ? "Heatmap on (H to toggle)" : "Heatmap off");
 }
 
 function shorten(a) {
@@ -819,16 +1149,24 @@ function formatUsdCompact(n) {
 }
 
 let statusTimer = null;
-function showStatus(msg) {
+function showStatus(msg, shareCallback) {
   const el = document.getElementById("status");
   if (!msg) {
     el.classList.remove("visible");
     return;
   }
-  el.textContent = msg;
+  el.innerHTML = "";
+  el.appendChild(document.createTextNode(msg));
+  if (shareCallback) {
+    const btn = document.createElement("button");
+    btn.textContent = "Share";
+    btn.style.cssText = "margin-left:8px;padding:2px 8px;font-size:10px;";
+    btn.onclick = shareCallback;
+    el.appendChild(btn);
+  }
   el.classList.add("visible");
   clearTimeout(statusTimer);
-  statusTimer = setTimeout(() => el.classList.remove("visible"), 4000);
+  statusTimer = setTimeout(() => el.classList.remove("visible"), shareCallback ? 10000 : 4000);
 }
 
 // --- Boot ---------------------------------------------------------------------
@@ -861,6 +1199,8 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "Enter") confirmBurn();
     return;
   }
+  if (e.key === "h" || e.key === "H") { toggleHeatmap(); return; }
+  if (e.key === "t" || e.key === "T") { toggleTimeMachine(); return; }
   if (pendingPixels.length === 0) return;
   if (e.key === "Escape") clearPending();
   if (e.key === "Enter") burnPending();

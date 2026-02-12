@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Your Drawings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      padding: 16px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 4px;
+    }
+
+    button {
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: #111;
+      color: #fff;
+      border: 1px solid #333;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    button:hover { border-color: #fff; }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: #333;
+      margin: 12px 0;
+    }
+
+    .dim { color: #888; }
+
+    .stats {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 4px;
+    }
+
+    .stat-label { color: #888; }
+    .stat-value { color: #fff; font-weight: 500; }
+
+    .status {
+      color: #888;
+      padding: 40px 0;
+      text-align: center;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .drawing {
+      background: #111;
+      border: 1px solid #222;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .drawing canvas {
+      width: 100%;
+      aspect-ratio: 1;
+      image-rendering: pixelated;
+      cursor: pointer;
+    }
+
+    .drawing-meta {
+      display: flex;
+      justify-content: space-between;
+      color: #888;
+    }
+
+    .drawing-pixels { color: #fff; font-weight: 500; }
+
+    .address-input {
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      background: #111;
+      color: #fff;
+      border: 1px solid #333;
+      padding: 5px 12px;
+      width: 360px;
+      text-transform: none;
+    }
+
+    .address-input:focus { outline: none; border-color: #fff; }
+
+    .address-input::placeholder { color: #444; text-transform: uppercase; }
+
+    .search-row {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Your Drawings</h1>
+    <div class="nav">
+      <button onclick="window.location='index.html'">Canvas</button>
+      <button onclick="window.location='leaderboard.html'">Leaderboard</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+    <div class="search-row">
+      <input type="text" class="address-input" id="addressInput" placeholder="Paste address or ENS..." />
+      <button onclick="loadAddress()">Load</button>
+      <button id="connectBtn" onclick="connectAndLoad()">Connect</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="stats" id="statsRow" style="display:none;">
+    <div><span class="stat-label">Drawings </span><span class="stat-value" id="drawingCount">0</span></div>
+    <div><span class="stat-label">Pixels </span><span class="stat-value" id="totalPixels">0</span></div>
+    <div><span class="stat-label">Burned </span><span class="stat-value" id="totalBurned">0 VV</span></div>
+  </div>
+
+  <div id="statusMsg" class="status">Connect wallet or paste an address</div>
+  <div class="gallery" id="gallery"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js" crossorigin="anonymous"></script>
+  <script>
+    const BASE_RPC = "https://mainnet.base.org";
+    const CANVAS_ADDRESS = "0x0000000000000000000000000000000000000000"; // TODO: update after deploy
+    const GRID_SIZE = 1000;
+    const TOPIC = "0xb4e9abde3834d83b42334cfc3abafd967ac745343b318d7e2e9fc789fa85a466";
+    const LOCAL_MODE = CANVAS_ADDRESS === "0x0000000000000000000000000000000000000000";
+
+    async function connectAndLoad() {
+      if (!window.ethereum) { setStatus("No wallet found"); return; }
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      if (!accounts.length) return;
+      document.getElementById("addressInput").value = accounts[0];
+      await loadAddress();
+    }
+
+    async function loadAddress() {
+      const raw = document.getElementById("addressInput").value.trim();
+      if (!raw) return;
+
+      if (LOCAL_MODE) {
+        loadDemo();
+        return;
+      }
+
+      let address = raw;
+
+      // ENS resolution
+      if (raw.endsWith(".eth")) {
+        setStatus("Resolving ENS...");
+        try {
+          const ethProvider = new ethers.JsonRpcProvider("https://eth.llamarpc.com");
+          const resolved = await ethProvider.resolveName(raw);
+          if (!resolved) { setStatus("ENS not found"); return; }
+          address = resolved;
+        } catch (e) {
+          setStatus("ENS resolution failed");
+          return;
+        }
+      }
+
+      if (!/^0x[0-9a-fA-F]{40}$/.test(address)) {
+        setStatus("Invalid address");
+        return;
+      }
+
+      setStatus("Fetching drawings...");
+      await fetchDrawings(address);
+    }
+
+    async function fetchDrawings(address) {
+      const paddedAddress = "0x" + address.slice(2).toLowerCase().padStart(64, "0");
+
+      const body = {
+        jsonrpc: "2.0",
+        method: "eth_getLogs",
+        params: [{
+          fromBlock: "0x0",
+          toBlock: "latest",
+          address: CANVAS_ADDRESS,
+          topics: [TOPIC, paddedAddress]
+        }],
+        id: 1,
+      };
+
+      try {
+        const res = await fetch(BASE_RPC, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        const logs = data.result || [];
+
+        if (logs.length === 0) {
+          setStatus("No drawings found for this address");
+          return;
+        }
+
+        // Group logs by transaction hash
+        const txMap = new Map();
+        for (const log of logs) {
+          const txHash = log.transactionHash;
+          if (!txMap.has(txHash)) txMap.set(txHash, []);
+
+          const d = log.data.replace("0x", "");
+          const x = parseInt(d.slice(0, 64), 16);
+          const y = parseInt(d.slice(64, 128), 16);
+          const color = parseInt(d.slice(128, 192), 16);
+          const block = parseInt(log.blockNumber, 16);
+
+          txMap.get(txHash).push({ x, y, color, block });
+        }
+
+        // Sort transactions by block number (earliest first)
+        const drawings = [...txMap.entries()]
+          .map(([txHash, pixels]) => ({ txHash, pixels, block: pixels[0].block }))
+          .sort((a, b) => b.block - a.block); // newest first
+
+        // Update stats
+        const totalPx = logs.length;
+        document.getElementById("drawingCount").textContent = drawings.length.toLocaleString();
+        document.getElementById("totalPixels").textContent = totalPx.toLocaleString();
+        document.getElementById("totalBurned").textContent = (totalPx * 1000).toLocaleString() + " VV";
+        document.getElementById("statsRow").style.display = "flex";
+
+        setStatus("");
+        renderGallery(drawings);
+      } catch (e) {
+        console.error(e);
+        setStatus("Failed to fetch events");
+      }
+    }
+
+    function renderGallery(drawings) {
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "";
+
+      for (const drawing of drawings) {
+        const card = document.createElement("div");
+        card.className = "drawing";
+
+        // Find bounding box for this drawing
+        let minX = GRID_SIZE, minY = GRID_SIZE, maxX = 0, maxY = 0;
+        for (const p of drawing.pixels) {
+          if (p.x < minX) minX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.x > maxX) maxX = p.x;
+          if (p.y > maxY) maxY = p.y;
+        }
+
+        // Add padding around bounding box
+        const pad = Math.max(2, Math.floor(Math.max(maxX - minX, maxY - minY) * 0.15));
+        minX = Math.max(0, minX - pad);
+        minY = Math.max(0, minY - pad);
+        maxX = Math.min(GRID_SIZE - 1, maxX + pad);
+        maxY = Math.min(GRID_SIZE - 1, maxY + pad);
+
+        // Make it square
+        let w = maxX - minX + 1;
+        let h = maxY - minY + 1;
+        const size = Math.max(w, h);
+
+        const cvs = document.createElement("canvas");
+        cvs.width = size;
+        cvs.height = size;
+        const ctx = cvs.getContext("2d");
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, size, size);
+
+        // Center the drawing in the square
+        const offsetX = Math.floor((size - w) / 2);
+        const offsetY = Math.floor((size - h) / 2);
+
+        for (const p of drawing.pixels) {
+          const r = (p.color >> 16) & 0xff;
+          const g = (p.color >> 8) & 0xff;
+          const b = p.color & 0xff;
+          ctx.fillStyle = `rgb(${r},${g},${b})`;
+          ctx.fillRect(p.x - minX + offsetX, p.y - minY + offsetY, 1, 1);
+        }
+
+        // Click to download at 1080x1080
+        cvs.title = "Click to download";
+        cvs.onclick = () => {
+          const dlSize = 1080;
+          const dlCanvas = document.createElement("canvas");
+          dlCanvas.width = dlSize;
+          dlCanvas.height = dlSize;
+          const dlCtx = dlCanvas.getContext("2d");
+          dlCtx.imageSmoothingEnabled = false;
+          dlCtx.fillStyle = "#000";
+          dlCtx.fillRect(0, 0, dlSize, dlSize);
+          dlCtx.drawImage(cvs, 0, 0, size, size, 0, 0, dlSize, dlSize);
+          const link = document.createElement("a");
+          link.download = `drawing-${drawing.txHash.slice(0, 10)}.png`;
+          link.href = dlCanvas.toDataURL("image/png");
+          link.click();
+        };
+
+        const meta = document.createElement("div");
+        meta.className = "drawing-meta";
+        meta.innerHTML = `
+          <span class="drawing-pixels">${drawing.pixels.length} px</span>
+          <span>${(drawing.pixels.length * 1000).toLocaleString()} VV</span>
+        `;
+
+        const blockInfo = document.createElement("div");
+        blockInfo.className = "drawing-meta";
+        blockInfo.innerHTML = `
+          <span>Block ${drawing.block.toLocaleString()}</span>
+          <a href="https://basescan.org/tx/${drawing.txHash}" target="_blank" style="color:#888;text-decoration:none;">tx &rarr;</a>
+        `;
+
+        card.appendChild(cvs);
+        card.appendChild(meta);
+        card.appendChild(blockInfo);
+        gallery.appendChild(card);
+      }
+    }
+
+    function loadDemo() {
+      const drawings = [];
+      const colors = [0xFFFFFF, 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF];
+
+      // Drawing 1: diagonal line
+      const d1 = [];
+      for (let i = 0; i < 40; i++) d1.push({ x: 500 + i, y: 500 + i, color: 0xFFFFFF, block: 42000100 });
+      drawings.push({ txHash: "0xdemo111111aaaaaa", pixels: d1, block: 42000100 });
+
+      // Drawing 2: square outline
+      const d2 = [];
+      for (let i = 0; i < 20; i++) {
+        d2.push({ x: 200 + i, y: 200, color: 0xFF0000, block: 42000200 });
+        d2.push({ x: 200 + i, y: 219, color: 0xFF0000, block: 42000200 });
+        d2.push({ x: 200, y: 200 + i, color: 0xFF0000, block: 42000200 });
+        d2.push({ x: 219, y: 200 + i, color: 0xFF0000, block: 42000200 });
+      }
+      drawings.push({ txHash: "0xdemo222222bbbbbb", pixels: d2, block: 42000200 });
+
+      // Drawing 3: cross / plus sign
+      const d3 = [];
+      for (let i = -10; i <= 10; i++) {
+        d3.push({ x: 600 + i, y: 300, color: 0x00FF00, block: 42000300 });
+        d3.push({ x: 600, y: 300 + i, color: 0x00FF00, block: 42000300 });
+      }
+      drawings.push({ txHash: "0xdemo333333cccccc", pixels: d3, block: 42000300 });
+
+      // Drawing 4: scattered dots
+      const d4 = [];
+      for (let i = 0; i < 25; i++) {
+        d4.push({ x: 100 + Math.floor(Math.random() * 50), y: 700 + Math.floor(Math.random() * 50), color: colors[i % colors.length], block: 42000400 });
+      }
+      drawings.push({ txHash: "0xdemo444444dddddd", pixels: d4, block: 42000400 });
+
+      // Drawing 5: L shape
+      const d5 = [];
+      for (let i = 0; i < 30; i++) d5.push({ x: 400, y: 600 + i, color: 0x0000FF, block: 42000500 });
+      for (let i = 0; i < 15; i++) d5.push({ x: 400 + i, y: 629, color: 0x0000FF, block: 42000500 });
+      drawings.push({ txHash: "0xdemo555555eeeeee", pixels: d5, block: 42000500 });
+
+      // Drawing 6: checkerboard
+      const d6 = [];
+      for (let r = 0; r < 10; r++) {
+        for (let c = 0; c < 10; c++) {
+          if ((r + c) % 2 === 0) d6.push({ x: 750 + c, y: 750 + r, color: 0xFFFF00, block: 42000600 });
+        }
+      }
+      drawings.push({ txHash: "0xdemo666666ffffff", pixels: d6, block: 42000600 });
+
+      drawings.reverse();
+
+      const totalPx = drawings.reduce((s, d) => s + d.pixels.length, 0);
+      document.getElementById("drawingCount").textContent = drawings.length;
+      document.getElementById("totalPixels").textContent = totalPx.toLocaleString();
+      document.getElementById("totalBurned").textContent = (totalPx * 1000).toLocaleString() + " VV";
+      document.getElementById("statsRow").style.display = "flex";
+      setStatus("");
+      renderGallery(drawings);
+    }
+
+    function setStatus(msg) {
+      const el = document.getElementById("statusMsg");
+      el.textContent = msg;
+      el.style.display = msg ? "block" : "none";
+    }
+
+    // Auto-load from URL param
+    const params = new URLSearchParams(window.location.search);
+    const addrParam = params.get("address");
+    if (addrParam) {
+      document.getElementById("addressInput").value = addrParam;
+      loadAddress();
+    }
+  </script>
+</body>
+</html>

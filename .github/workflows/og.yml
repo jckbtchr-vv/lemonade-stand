@@ -22,9 +22,24 @@ jobs:
 
       - run: node generate-og.mjs
 
+      - name: Pin to IPFS via Pinata
+        if: env.PINATA_JWT != ''
+        env:
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
+        run: |
+          CID=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
+            -H "Authorization: Bearer $PINATA_JWT" \
+            -F "file=@og.png" \
+            -F 'pinataMetadata={"name":"canvas-snapshot"}' \
+            | jq -r '.IpfsHash')
+          echo "IPFS CID: $CID"
+          echo "https://gateway.pinata.cloud/ipfs/$CID"
+          echo "$CID" >> ipfs-history.txt
+
       - name: Commit og.png if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add og.png index.html
+          [ -f ipfs-history.txt ] && git add ipfs-history.txt
           git diff --cached --quiet || git commit -m "Update og.png + title" && git push
