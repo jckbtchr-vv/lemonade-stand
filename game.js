@@ -1,4 +1,4 @@
-// THE $X HOMEPAGE — Burn 1 VV, place 1 pixel
+// THE $X HOMEPAGE — Burn 10 VV, place 1 pixel
 // Token: 0xd2969cc475a49e73182ae1c517add57db0f1c2ac (Base)
 
 // --- Config -------------------------------------------------------------------
@@ -294,7 +294,7 @@ function updatePendingBar() {
   }
 
   bar.style.display = "flex";
-  const vvCost = count * 1000;
+  const vvCost = count * 10;
   const usdCost = vvCost * tokenPriceUsd;
   let text = `${count} pixel${count > 1 ? "s" : ""} for ${vvCost.toLocaleString()} VV`;
   if (tokenPriceUsd > 0) text += ` (${formatUsd(usdCost)})`;
@@ -306,7 +306,7 @@ function burnPending() {
   if (count === 0) return;
 
   // Show confirm popover
-  const vvCost = count * 1000;
+  const vvCost = count * 10;
   const usdCost = vvCost * tokenPriceUsd;
   let text = `${count} pixel${count > 1 ? "s" : ""} — ${vvCost.toLocaleString()} VV`;
   if (tokenPriceUsd > 0) text += ` (${formatUsd(usdCost)})`;
@@ -322,7 +322,7 @@ function confirmBurn() {
   if (count === 0) return;
 
   if (LOCAL_MODE) {
-    localBalance -= count * 1000;
+    localBalance -= count * 10;
     document.getElementById("balance").textContent = localBalance.toLocaleString() + " VV";
     totalPixels += count;
     sessionPixels += count;
@@ -601,8 +601,8 @@ async function fetchTokenData() {
       updateMacroStats(pair);
 
       const costEl = document.getElementById("pixelCost");
-      const pricePerPixel = tokenPriceUsd * 1000;
-      if (costEl) costEl.textContent = pricePerPixel > 0 ? `1,000 VV (${formatUsd(pricePerPixel)})` : "1,000 VV";
+      const pricePerPixel = tokenPriceUsd * 10;
+      if (costEl) costEl.textContent = pricePerPixel > 0 ? `10 VV (${formatUsd(pricePerPixel)})` : "10 VV";
 
       updateSessionCost();
     }
@@ -614,7 +614,7 @@ async function fetchTokenData() {
 function updateSessionCost() {
   const el = document.getElementById("sessionCost");
   if (el) {
-    const cost = sessionPixels * 1000 * tokenPriceUsd;
+    const cost = sessionPixels * 10 * tokenPriceUsd;
     el.textContent = formatUsd(cost);
   }
 }
@@ -641,7 +641,7 @@ function updatePixelStats() {
   const pixelsEl = document.getElementById("statPixels");
   const burnedEl = document.getElementById("statBurned");
   if (pixelsEl) pixelsEl.textContent = totalPixels.toLocaleString();
-  if (burnedEl) burnedEl.textContent = (totalPixels * 1000).toLocaleString() + " VV";
+  if (burnedEl) burnedEl.textContent = (totalPixels * 10).toLocaleString() + " VV";
 }
 
 async function updateBlock() {
@@ -725,7 +725,7 @@ async function updateBalance() {
   const token = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, provider);
   const dec = await token.decimals();
   tokenDecimals = Number(dec);
-  burnAmount = 1000n * (10n ** BigInt(tokenDecimals));
+  burnAmount = 10n * (10n ** BigInt(tokenDecimals));
 
   const bal = await token.balanceOf(userAddress);
   const human = Number(ethers.formatUnits(bal, tokenDecimals));
@@ -919,7 +919,7 @@ function downloadGrid() {
 
 function shareToTwitter(pixels, color) {
   const count = pixels.length;
-  const vvCost = count * 1000;
+  const vvCost = count * 10;
   const mc = tokenMarketCap > 0 ? " on THE $" + Math.round(tokenMarketCap).toLocaleString() + " HOMEPAGE" : "";
   const text = `Burned ${vvCost.toLocaleString()} VV for ${count} pixel${count > 1 ? "s" : ""}${mc}`;
   const url = encodeURIComponent(window.location.origin + window.location.pathname);
@@ -936,7 +936,7 @@ function addFeedItem(address, count) {
 
   const item = document.createElement("div");
   item.className = "feed-item";
-  item.textContent = `${shorten(address)} burned ${(count * 1000).toLocaleString()} VV (${count} px)`;
+  item.textContent = `${shorten(address)} burned ${(count * 10).toLocaleString()} VV (${count} px)`;
 
   feed.appendChild(item);
 

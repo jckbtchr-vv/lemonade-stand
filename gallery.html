@@ -264,7 +264,7 @@
         const totalPx = logs.length;
         document.getElementById("drawingCount").textContent = drawings.length.toLocaleString();
         document.getElementById("totalPixels").textContent = totalPx.toLocaleString();
-        document.getElementById("totalBurned").textContent = (totalPx * 1000).toLocaleString() + " VV";
+        document.getElementById("totalBurned").textContent = (totalPx ).toLocaleString() + " VV";
         document.getElementById("statsRow").style.display = "flex";
 
         setStatus("");
@@ -345,7 +345,7 @@
         meta.className = "drawing-meta";
         meta.innerHTML = `
           <span class="drawing-pixels">${drawing.pixels.length} px</span>
-          <span>${(drawing.pixels.length * 1000).toLocaleString()} VV</span>
+          <span>${drawing.pixels.length.toLocaleString()} VV</span>
         `;
 
         const blockInfo = document.createElement("div");
@@ -416,7 +416,7 @@
       const totalPx = drawings.reduce((s, d) => s + d.pixels.length, 0);
       document.getElementById("drawingCount").textContent = drawings.length;
       document.getElementById("totalPixels").textContent = totalPx.toLocaleString();
-      document.getElementById("totalBurned").textContent = (totalPx * 1000).toLocaleString() + " VV";
+      document.getElementById("totalBurned").textContent = (totalPx ).toLocaleString() + " VV";
       document.getElementById("statsRow").style.display = "flex";
       setStatus("");
       renderGallery(drawings);

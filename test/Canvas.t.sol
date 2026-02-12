@@ -48,15 +48,15 @@ contract CanvasTest is Test {
         token = new MockERC20();
         canvas = new Canvas(address(token));
         ONE_TOKEN = 1e18;
-        BURN_PER_PIXEL = 1000 * ONE_TOKEN;
+        BURN_PER_PIXEL = 10 * ONE_TOKEN;
 
         // Fund alice with 1,000,000 tokens and approve
         token.mint(alice, 1_000_000 * ONE_TOKEN);
         vm.prank(alice);
         token.approve(address(canvas), type(uint256).max);
 
-        // Fund bob with 5,000 tokens and approve (enough for 5 pixels)
-        token.mint(bob, 5_000 * ONE_TOKEN);
+        // Fund bob with 20 tokens and approve (enough for 2 pixels)
+        token.mint(bob, 20 * ONE_TOKEN);
         vm.prank(bob);
         token.approve(address(canvas), type(uint256).max);
     }
@@ -84,7 +84,7 @@ contract CanvasTest is Test {
 
         // Token burned to dead address
         assertEq(token.balanceOf(DEAD), BURN_PER_PIXEL);
-        assertEq(token.balanceOf(alice), 999_000 * ONE_TOKEN);
+        assertEq(token.balanceOf(alice), 999_990 * ONE_TOKEN);
     }
 
     function test_placePixel_emitsEvent() public {
@@ -148,7 +148,7 @@ contract CanvasTest is Test {
         vm.stopPrank();
 
         assertEq(token.balanceOf(DEAD), 3 * BURN_PER_PIXEL);
-        assertEq(token.balanceOf(alice), 997_000 * ONE_TOKEN);
+        assertEq(token.balanceOf(alice), 999_970 * ONE_TOKEN);
     }
 
     function test_placePixel_sameCoordOverwrite() public {
@@ -191,7 +191,7 @@ contract CanvasTest is Test {
         canvas.placePixels(xs, ys, colors);
 
         assertEq(token.balanceOf(DEAD), 3 * BURN_PER_PIXEL);
-        assertEq(token.balanceOf(alice), 997_000 * ONE_TOKEN);
+        assertEq(token.balanceOf(alice), 999_970 * ONE_TOKEN);
     }
 
     function test_placePixels_emitsEvents() public {
@@ -245,12 +245,12 @@ contract CanvasTest is Test {
     }
 
     function test_placePixels_revertsInsufficientBalance() public {
-        // Bob has 5,000 tokens (enough for 5 pixels), try to place 6
-        uint16[] memory xs = new uint16[](6);
-        uint16[] memory ys = new uint16[](6);
-        uint24[] memory colors = new uint24[](6);
+        // Bob has 2 tokens (enough for 2 pixels), try to place 3
+        uint16[] memory xs = new uint16[](3);
+        uint16[] memory ys = new uint16[](3);
+        uint24[] memory colors = new uint24[](3);
 
-        for (uint16 i = 0; i < 6; i++) {
+        for (uint16 i = 0; i < 3; i++) {
             xs[i] = i; ys[i] = 0; colors[i] = 0x000000;
         }
 

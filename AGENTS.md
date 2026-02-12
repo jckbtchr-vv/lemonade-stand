@@ -7,7 +7,7 @@ THE $X HOMEPAGE is a 1000x1000 pixel canvas on Base. Burn 1 VV token to place 1 
 - **Chain:** Base (chainId 8453)
 - **VV Token:** `0xd2969cc475a49e73182ae1c517add57db0f1c2ac`
 - **Canvas Contract:** `TODO` (not yet deployed)
-- **Cost:** 1,000 VV per pixel (18 decimals, so `1000000000000000000000` wei / 1e21)
+- **Cost:** 10 VV per pixel (18 decimals, so `10000000000000000000` wei / 10e18)
 
 ## ABI
 
@@ -158,7 +158,7 @@ for (const e of events) {
 
 ## Rules
 
-- 1,000 VV burned per pixel (1B supply / 1M pixels)
+- 10 VV burned per pixel (1B supply / 1M pixels = each pixel can be painted 100 times)
 - Any pixel can be overwritten by anyone at any time
 - Last write wins — there is no protection or refund
 - All burns are final — tokens are sent to the dead address

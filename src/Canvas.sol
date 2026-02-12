@@ -17,7 +17,7 @@ contract Canvas {
 
     constructor(address _token) {
         token = IERC20(_token);
-        burnAmount = 1_000 * 1e18;
+        burnAmount = 10 * 1e18;
     }
 
     function placePixel(uint16 x, uint16 y, uint24 color) external {
