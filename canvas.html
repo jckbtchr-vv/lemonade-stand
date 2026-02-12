@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Lemonade Stand</title>
+  <title>Pixel Canvas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     :root {
@@ -44,20 +44,6 @@
     header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .hdr-btns { display: flex; gap: 8px; }
 
-    /* nav */
-    .nav {
-      display: flex; gap: 12px; margin-bottom: 16px; font-size: 13px;
-    }
-
-    .nav a {
-      color: var(--muted); text-decoration: none;
-      padding: 6px 12px; border-radius: 6px;
-      transition: all 0.15s;
-    }
-
-    .nav a:hover { color: var(--text); background: var(--surface); }
-    .nav a.active { color: var(--gold); background: var(--surface); }
-
     /* buttons */
     button {
       background: var(--surface);
@@ -81,6 +67,20 @@
 
     .btn-connect { color: var(--gold); border-color: var(--gold); }
     .btn-connect:hover { background: rgba(234,179,8,0.08); color: var(--gold); border-color: var(--gold); }
+
+    /* nav */
+    .nav {
+      display: flex; gap: 12px; margin-bottom: 16px; font-size: 13px;
+    }
+
+    .nav a {
+      color: var(--muted); text-decoration: none;
+      padding: 6px 12px; border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .nav a:hover { color: var(--text); background: var(--surface); }
+    .nav a.active { color: var(--gold); background: var(--surface); }
 
     /* panels */
     .panel {
@@ -140,53 +140,65 @@
     .stat .val { font-size: 22px; font-weight: 600; margin-top: 2px; }
     .stat .val.gold { color: var(--gold); }
 
-    /* weather */
-    .weather { font-size: 13px; color: var(--muted); margin-bottom: 12px; padding: 0 2px; }
-
-    /* actions */
-    .actions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-    .actions button { width: 100%; padding: 12px; font-size: 14px; }
-
-    .run-btn {
-      background: var(--accent) !important;
-      border-color: var(--accent) !important;
-      color: white !important;
-      font-size: 16px !important;
-      padding: 16px !important;
-      font-weight: 600;
-      border-radius: 10px;
+    /* canvas grid */
+    .canvas-wrap {
+      display: flex; justify-content: center; margin-bottom: 12px;
     }
 
-    .run-btn:hover:not(:disabled) {
-      background: var(--accent-hover) !important;
-      border-color: var(--accent-hover) !important;
+    #pixelCanvas {
+      width: 100%; max-width: 449px;
+      image-rendering: pixelated;
+      border-radius: 6px;
+      cursor: crosshair;
     }
 
-    .run-btn:disabled { opacity: 0.25; }
-
-    .vv-tag { font-size: 11px; color: var(--gold); opacity: 0.7; margin-left: 4px; }
-    .cd { text-align: center; font-size: 12px; color: var(--muted); margin-top: 4px; }
-
-    /* upgrades */
-    .up {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px; border: 1px solid var(--border);
-      border-radius: 8px; margin-bottom: 8px;
-      background: var(--surface2);
+    /* apply bar */
+    .apply-bar {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      align-items: center; justify-content: center; gap: 12px;
+      z-index: 100;
     }
 
-    .up .name { color: var(--text); font-size: 14px; font-weight: 500; }
-    .up .desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
-
-    /* log */
-    .log-entry {
-      padding: 6px 0; border-bottom: 1px solid var(--border);
+    .apply-bar .info {
       font-size: 13px; color: var(--muted);
     }
 
-    .log-entry:last-child { border-bottom: none; }
-    .log-entry .hi { color: var(--green); }
-    .log-entry .lo { color: var(--red); }
+    .apply-bar .info .num { color: var(--text); font-weight: 600; }
+    .apply-bar .info .cost { color: var(--gold); font-weight: 600; }
+
+    .apply-bar .btn-apply {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      font-weight: 600;
+      padding: 8px 20px;
+    }
+
+    .apply-bar .btn-apply:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .apply-bar .btn-clear {
+      color: var(--red);
+      border-color: var(--red);
+    }
+
+    /* legend */
+    .legend {
+      display: flex; gap: 16px; justify-content: center;
+      margin-bottom: 12px; font-size: 12px; color: var(--muted);
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+
+    .legend-swatch {
+      width: 10px; height: 10px; border-radius: 2px;
+    }
 
     /* overlay */
     .overlay {
@@ -217,8 +229,8 @@
   <div id="app">
     <header>
       <div>
-        <h1>Lemonade Stand</h1>
-        <p>burn $VV to run a lemonade stand on base</p>
+        <h1>Pixel Canvas</h1>
+        <p>burn $VV to toggle pixels on base</p>
       </div>
       <div class="hdr-btns">
         <button class="btn-connect" id="connectBtn" onclick="connectWallet()">Connect</button>
@@ -229,8 +241,8 @@
     </header>
 
     <div class="nav">
-      <a href="index.html" class="active">Lemonade Stand</a>
-      <a href="canvas.html">Pixel Canvas</a>
+      <a href="index.html">Lemonade Stand</a>
+      <a href="canvas.html" class="active">Pixel Canvas</a>
     </div>
 
     <div class="panel status">
@@ -240,17 +252,17 @@
     </div>
 
     <div class="panel gate" id="gate">
-      Hold <strong>1,000 $VV</strong> on Base to play.
+      Hold <strong>1,000 $VV</strong> on Base to draw.
     </div>
 
     <div class="stats">
       <div class="stat">
-        <div class="label">Lemons</div>
-        <div class="val" id="lemons">0</div>
+        <div class="label">Pixels Lit</div>
+        <div class="val" id="pixelsLit">0</div>
       </div>
       <div class="stat">
-        <div class="label">Cups Sold</div>
-        <div class="val" id="cups">0</div>
+        <div class="label">Toggles</div>
+        <div class="val" id="totalToggles">0</div>
       </div>
       <div class="stat">
         <div class="label">$VV Burned</div>
@@ -258,31 +270,41 @@
       </div>
     </div>
 
-    <div class="weather" id="weather">Weather: -- &nbsp; Demand: --</div>
-
-    <div class="actions">
-      <button onclick="buyLemons()" id="buyBtn" disabled>
-        Buy 10 Lemons<span class="vv-tag">0.10 $VV</span>
-      </button>
-      <button class="run-btn" onclick="runStand()" id="runBtn" disabled>
-        Run Stand<span class="vv-tag" style="color:rgba(255,255,255,0.5)">0.10 $VV</span>
-      </button>
-      <div class="cd" id="cooldown"></div>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#eab308"></div>
+        <span>on</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#1c1e26; border:1px solid #262938"></div>
+        <span>off</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#3b82f6"></div>
+        <span>staged on</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#ef4444"></div>
+        <span>staged off</span>
+      </div>
     </div>
 
-    <div class="panel">
-      <h2>Upgrades</h2>
-      <div id="upgrades"><div style="color:var(--muted)">Connect wallet to play.</div></div>
+    <div class="canvas-wrap">
+      <canvas id="pixelCanvas" width="449" height="449"></canvas>
     </div>
+  </div>
 
-    <div class="panel">
-      <h2>Log</h2>
-      <div id="log"><div class="log-entry">Waiting for first shift...</div></div>
-    </div>
+  <div class="apply-bar" id="applyBar">
+    <span class="info">
+      <span class="num" id="stagedCount">0</span> pixels staged &middot;
+      <span class="cost" id="stagedCost">0.00</span> $VV
+    </span>
+    <button class="btn-clear" onclick="clearStaged()">Clear</button>
+    <button class="btn-apply" onclick="applyStaged()" id="applyBtn">Apply</button>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"
           crossorigin="anonymous"></script>
-  <script src="game.js"></script>
+  <script src="canvas.js"></script>
 </body>
 </html>
