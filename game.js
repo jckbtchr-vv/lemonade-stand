@@ -254,10 +254,10 @@ function startStroke(screenX, screenY, shiftKey) {
   if (shiftKey && lastPlacedX >= 0) {
     const linePixels = getLinePixels(lastPlacedX, lastPlacedY, gx, gy);
     for (const [px, py] of linePixels) {
-      addToPendingBrush(px, py);
+      applyBrush(px, py);
     }
   } else {
-    addToPendingBrush(gx, gy);
+    applyBrush(gx, gy);
   }
 
   lastDrawX = gx;
@@ -272,7 +272,7 @@ function continueStroke(screenX, screenY) {
 
   const linePixels = getLinePixels(lastDrawX, lastDrawY, gx, gy);
   for (const [px, py] of linePixels) {
-    addToPendingBrush(px, py);
+    applyBrush(px, py);
   }
   lastDrawX = gx;
   lastDrawY = gy;
@@ -280,11 +280,15 @@ function continueStroke(screenX, screenY) {
   lastPlacedY = gy;
 }
 
-function addToPendingBrush(cx, cy) {
+function applyBrush(cx, cy) {
   const half = Math.floor(brushSize / 2);
   for (let dy = -half; dy <= half; dy++) {
     for (let dx = -half; dx <= half; dx++) {
-      addToPending(cx + dx, cy + dy);
+      if (selectedColor === "#000000") {
+        removeFromPending(cx + dx, cy + dy);
+      } else {
+        addToPending(cx + dx, cy + dy);
+      }
     }
   }
 }
@@ -306,6 +310,24 @@ function addToPending(x, y) {
   // Draw preview immediately
   const { r, g, b } = hexToRgb(selectedColor);
   setPixel(x, y, r, g, b);
+  queueRender();
+  updatePendingBar();
+}
+
+function removeFromPending(x, y) {
+  if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) return;
+  const key = `${x},${y}`;
+  if (!pendingSet.has(key)) return;
+  pendingSet.delete(key);
+
+  // Find and remove from array, restore original color
+  const idx = pendingPixels.findIndex(p => p.x === x && p.y === y);
+  if (idx >= 0) {
+    const p = pendingPixels[idx];
+    setPixel(x, y, p.origR, p.origG, p.origB);
+    pendingPixels.splice(idx, 1);
+  }
+
   queueRender();
   updatePendingBar();
 }
