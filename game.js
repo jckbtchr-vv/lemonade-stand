@@ -314,10 +314,10 @@ function addToPending(x, y) {
   const origG = pixelBuffer[idx + 1];
   const origB = pixelBuffer[idx + 2];
 
-  pendingPixels.push({ x, y, origR, origG, origB });
+  const { r, g, b } = hexToRgb(selectedColor);
+  pendingPixels.push({ x, y, origR, origG, origB, r, g, b });
 
   // Draw preview immediately
-  const { r, g, b } = hexToRgb(selectedColor);
   setPixel(x, y, r, g, b);
   queueRender();
   updatePendingBar();
@@ -339,6 +339,12 @@ function removeFromPending(x, y) {
 
   queueRender();
   updatePendingBar();
+}
+
+function repaintPending() {
+  for (const p of pendingPixels) {
+    setPixel(p.x, p.y, p.r, p.g, p.b);
+  }
 }
 
 function endStroke() {
@@ -927,6 +933,7 @@ async function loadPixels() {
 
     document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
     updatePixelStats();
+    repaintPending();
     queueRender();
     showStatus("");
   } catch (err) {
@@ -955,6 +962,7 @@ function listenForPixels() {
       totalPixels++;
       document.getElementById("pixelCount").textContent = totalPixels.toLocaleString();
       updatePixelStats();
+      repaintPending();
       queueRender();
 
       // Batch feed items per user (events arrive in rapid succession for batch txs)
