@@ -24,8 +24,8 @@ const CANVAS_ABI = [
 ];
 
 const PALETTE = [
-  "#FFFFFF", "#000000", "#FF0000",
-  "#00FF00", "#0000FF", "#FFFF00",
+  "#FFFFFF", "#FF0000", "#00FF00",
+  "#0000FF", "#FFFF00",
 ];
 
 // --- State --------------------------------------------------------------------
@@ -594,6 +594,12 @@ function buildPalette() {
     el.onclick = () => selectColor(color);
     container.appendChild(el);
   });
+
+  // Eraser (paints black)
+  const eraser = document.createElement("div");
+  eraser.className = "swatch eraser" + (selectedColor === "#000000" ? " active" : "");
+  eraser.onclick = () => selectColor("#000000");
+  container.appendChild(eraser);
 
   const input = document.createElement("input");
   input.type = "text";
