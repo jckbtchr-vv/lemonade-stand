@@ -653,20 +653,22 @@ function selectColor(color) {
 }
 
 function buildBrushRow() {
-  const row = document.getElementById("brushRow");
-  if (!row) return;
-  row.innerHTML = "";
+  ["brushRow", "mobileBrushRow"].forEach((id) => {
+    const row = document.getElementById(id);
+    if (!row) return;
+    row.innerHTML = "";
 
-  BRUSH_SIZES.forEach((size) => {
-    const btn = document.createElement("button");
-    btn.className = "brush-btn" + (size === brushSize ? " active" : "");
-    btn.textContent = size + "px";
-    btn.onclick = () => {
-      brushSize = size;
-      buildBrushRow();
-      queueRender();
-    };
-    row.appendChild(btn);
+    BRUSH_SIZES.forEach((size) => {
+      const btn = document.createElement("button");
+      btn.className = "brush-btn" + (size === brushSize ? " active" : "");
+      btn.textContent = size + "px";
+      btn.onclick = () => {
+        brushSize = size;
+        buildBrushRow();
+        queueRender();
+      };
+      row.appendChild(btn);
+    });
   });
 }
 

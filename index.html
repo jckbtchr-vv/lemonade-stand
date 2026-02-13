@@ -393,6 +393,7 @@
       .mobile-bar .swatch { width: 24px; height: 24px; }
       .mobile-bar .swatch.eraser { width: 24px; height: 24px; }
       .mobile-bar button { padding: 6px 10px; font-size: 10px; }
+      .mobile-bar .brush-btn { width: 24px; height: 24px; font-size: 9px; }
 
       /* Move bottom-center (coords + pending) above mobile bar */
       .bottom-center {
@@ -407,7 +408,6 @@
 
       .hex-input { width: 56px; font-size: 10px; }
       .confirm-box { padding: 16px; }
-      .brush-row { display: none !important; }
     }
   </style>
 </head>
@@ -539,6 +539,7 @@
 
   <!-- Mobile bottom bar -->
   <div class="mobile-bar" id="mobileBar">
+    <div class="brush-row" id="mobileBrushRow"></div>
     <div id="mobilePalette" style="display:flex;align-items:center;gap:4px;"></div>
     <button onclick="openMobileMenu()">Menu</button>
   </div>
