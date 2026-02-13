@@ -189,6 +189,15 @@ function render() {
     ctx.stroke();
   }
 
+  // Canvas boundary outline
+  const bx = (0 - viewX) * zoom;
+  const by = (0 - viewY) * zoom;
+  const bw = GRID_SIZE * zoom;
+  const bh = GRID_SIZE * zoom;
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx, by, bw, bh);
+
   // Hover highlight with color preview (brush size)
   if (hoverX >= 0 && hoverX < GRID_SIZE && hoverY >= 0 && hoverY < GRID_SIZE) {
     const half = Math.floor(brushSize / 2);
@@ -640,6 +649,7 @@ function buildPalette() {
 function selectColor(color) {
   selectedColor = color;
   buildPalette();
+  buildMobilePalette();
 }
 
 function buildBrushRow() {
@@ -1136,10 +1146,56 @@ function showStatus(msg, shareCallback) {
   statusTimer = setTimeout(() => el.classList.remove("visible"), shareCallback ? 10000 : 4000);
 }
 
+// --- Mobile -------------------------------------------------------------------
+
+function openMobileMenu() {
+  document.getElementById("mobileMenu").classList.add("show");
+  syncMobileStats();
+}
+window.openMobileMenu = openMobileMenu;
+
+function closeMobileMenu() {
+  document.getElementById("mobileMenu").classList.remove("show");
+}
+window.closeMobileMenu = closeMobileMenu;
+
+function syncMobileStats() {
+  const copy = (src, dst) => {
+    const s = document.getElementById(src);
+    const d = document.getElementById(dst);
+    if (s && d) d.textContent = s.textContent;
+  };
+  copy("statPrice", "mStatPrice");
+  copy("statFdv", "mStatFdv");
+  copy("statPixels", "mStatPixels");
+  copy("statBurned", "mStatBurned");
+  copy("balance", "mBalance");
+}
+
+function buildMobilePalette() {
+  const container = document.getElementById("mobilePalette");
+  if (!container) return;
+  container.innerHTML = "";
+
+  PALETTE.forEach((color) => {
+    const el = document.createElement("div");
+    el.className = "swatch" + (color === selectedColor ? " active" : "");
+    el.style.backgroundColor = color;
+    el.onclick = () => selectColor(color);
+    container.appendChild(el);
+  });
+
+  const eraser = document.createElement("div");
+  eraser.className = "swatch eraser" + (selectedColor === "#000000" ? " active" : "");
+  eraser.onclick = () => selectColor("#000000");
+  container.appendChild(eraser);
+}
+
 // --- Boot ---------------------------------------------------------------------
 
 initBuffer();
 buildPalette();
+buildMobilePalette();
 buildBrushRow();
 fetchTokenData();
 updateBlock();

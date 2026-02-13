@@ -327,18 +327,87 @@
       justify-content: center;
     }
 
+    /* Mobile menu */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 25;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .mobile-menu.show { display: flex; }
+
+    .mobile-menu button {
+      width: 200px;
+      text-align: center;
+      padding: 10px 16px;
+    }
+
+    .mobile-menu .stat-row-left,
+    .mobile-menu .stat-row {
+      width: 200px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .mobile-menu .divider { width: 200px; }
+
+    .mobile-bar {
+      display: none;
+    }
+
     @media (max-width: 640px) {
       body { font-size: 10px; }
-      .top-left, .top-right, .bottom-left, .bottom-right { padding: 6px; }
-      .top-left { max-width: 45%; }
-      .top-right { max-width: 45%; }
-      .top-center { font-size: 10px; top: 4px; }
-      .download-group { flex-wrap: wrap; }
-      .bottom-center { bottom: 50px; }
-      .swatch { width: 18px; height: 18px; }
-      .hex-input { width: 60px; font-size: 10px; }
-      button { padding: 4px 8px; font-size: 10px; }
+
+      /* Hide all corner overlays */
+      .top-left { display: none !important; }
+      .top-right { display: none !important; }
+      .bottom-left { display: none !important; }
+      .bottom-right { display: none !important; }
+      .feed { display: none !important; }
+      .time-machine { display: none !important; }
+
+      /* Title stays but smaller */
+      .top-center { font-size: 9px; top: 6px; }
+
+      /* Bottom bar: palette + menu button */
+      .mobile-bar {
+        display: flex;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        z-index: 12;
+        background: rgba(0,0,0,0.85);
+        border-top: 1px solid #222;
+        padding: 8px 10px;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .mobile-bar .swatch { width: 24px; height: 24px; }
+      .mobile-bar .swatch.eraser { width: 24px; height: 24px; }
+      .mobile-bar button { padding: 6px 10px; font-size: 10px; }
+
+      /* Move bottom-center (coords + pending) above mobile bar */
+      .bottom-center {
+        bottom: 56px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      /* Hide desktop palette on mobile — using mobile bar instead */
+      .bottom-center #palette { display: none !important; }
+      .bottom-center .coords { font-size: 9px; }
+
+      .hex-input { width: 56px; font-size: 10px; }
       .confirm-box { padding: 16px; }
+      .brush-row { display: none !important; }
     }
   </style>
 </head>
@@ -466,6 +535,50 @@
         <button onclick="cancelBurn()">Cancel</button>
       </div>
     </div>
+  </div>
+
+  <!-- Mobile bottom bar -->
+  <div class="mobile-bar" id="mobileBar">
+    <div id="mobilePalette" style="display:flex;align-items:center;gap:4px;"></div>
+    <button onclick="openMobileMenu()">Menu</button>
+  </div>
+
+  <!-- Mobile fullscreen menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="stat-row-left">
+      <span class="stat-label">Price</span>
+      <span class="stat-value" id="mStatPrice">-</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row-left">
+      <span class="stat-label">FDV</span>
+      <span class="stat-value" id="mStatFdv">-</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row-left">
+      <span class="stat-label">Pixels</span>
+      <span class="stat-value" id="mStatPixels">0</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row-left">
+      <span class="stat-label">Burned</span>
+      <span class="stat-value" id="mStatBurned">0 VV</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row">
+      <span class="stat-label">Balance</span>
+      <span class="stat-value" id="mBalance">-</span>
+    </div>
+    <div class="divider"></div>
+    <button id="mConnectBtn" onclick="connectWallet();closeMobileMenu()">Connect</button>
+    <button onclick="window.open('https://zora.co/@visualizevalue','_blank')">Buy VV</button>
+    <div class="divider"></div>
+    <button onclick="downloadFull();closeMobileMenu()">Download</button>
+    <button onclick="window.location='gallery.html'">Gallery</button>
+    <button onclick="window.location='leaderboard.html'">Leaderboard</button>
+    <button onclick="window.location='terms.html'">Terms</button>
+    <div class="divider"></div>
+    <button onclick="closeMobileMenu()">Close</button>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js" crossorigin="anonymous"></script>
